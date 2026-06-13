@@ -1,0 +1,2745 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUCC Mini Soccer: Bots Arcade</title>
+    <!-- Modern Outfit typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #080212;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* New Stylish HUD container synced with viewport/monitor size */
+        .top-hud {
+            position: absolute;
+            left: 50%;
+            top: 2.5vh;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1vh;
+            pointer-events: none;
+            z-index: 10;
+            font-family: 'Outfit', sans-serif;
+            width: clamp(380px, 45vw, 750px);
+        }
+
+        .hud-row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 1.5vw;
+        }
+
+        .hud-box {
+            background: rgba(13, 6, 28, 0.88);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 2.5px solid transparent;
+        }
+
+        /* Score Boxes styling */
+        .score-box {
+            flex: 1;
+            height: clamp(60px, 8vh, 100px);
+            padding: 5px clamp(15px, 2.5vw, 25px);
+            box-sizing: border-box;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .home-score-box {
+            border-color: #ff9000;
+            box-shadow: 0 0 10px rgba(255, 144, 0, 0.2);
+            border-top-left-radius: 24px;
+            border-bottom-left-radius: 24px;
+        }
+
+        .away-score-box {
+            border-color: #00f3ff;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            border-top-right-radius: 24px;
+            border-bottom-right-radius: 24px;
+        }
+
+        .team-label {
+            font-size: clamp(16px, 2.2vh, 32px);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+            max-width: 75%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .home-score-box .team-label {
+            color: #ffb700;
+        }
+
+        .away-score-box .team-label {
+            color: #00f3ff;
+        }
+
+        .hud-value {
+            font-size: clamp(24px, 3.5vh, 48px);
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .home-score-box .hud-value {
+            text-shadow: 0 0 10px rgba(255, 144, 0, 0.5);
+        }
+
+        .away-score-box .hud-value {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        /* Pause Button middle box styling */
+        .pause-box {
+            width: clamp(50px, 7.5vh, 90px);
+            height: clamp(50px, 7.5vh, 90px);
+            border-color: #ff00b7;
+            box-shadow: 0 0 20px rgba(255, 0, 183, 0.3), inset 0 0 10px rgba(255, 0, 183, 0.15);
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            background: rgba(26, 12, 49, 0.85);
+        }
+
+        .pause-box:hover {
+            transform: scale(1.08);
+            background: #ff00b7;
+            box-shadow: 0 0 15px rgba(255, 0, 183, 0.6);
+            border-color: #ff00b7;
+        }
+
+        .pause-box:hover .pause-icon {
+            fill: #ffffff;
+        }
+
+        .pause-box:active {
+            transform: scale(0.95);
+        }
+
+        .pause-icon {
+            width: 40%;
+            height: 40%;
+            fill: #ff00b7;
+            transition: fill 0.3s ease;
+        }
+
+        /* Bottom Row Timer styling */
+        .hud-row-bottom {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .timer-box {
+            width: clamp(200px, 24vw, 420px);
+            height: clamp(65px, 9vh, 100px);
+            background: linear-gradient(135deg, rgba(20, 10, 38, 0.9) 0%, rgba(8, 3, 18, 0.95) 100%);
+            border: 2px solid rgba(0, 243, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.25), inset 0 0 12px rgba(0, 243, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 20px;
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        /* Tech corner accents */
+        .timer-box::before,
+        .timer-box::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: #ff00b7;
+            border-style: solid;
+            pointer-events: none;
+        }
+
+        .timer-box::before {
+            top: 2px;
+            left: 2px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .timer-box::after {
+            bottom: 2px;
+            right: 2px;
+            border-width: 0 2px 2px 0;
+        }
+
+        /* Pulsing dot indicator */
+        .timer-neon-pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #00f3ff;
+            box-shadow: 0 0 8px #00f3ff;
+            animation: timer-indicator-pulse 2s infinite ease-in-out;
+            transition: background-color 0.3s;
+        }
+
+        /* Rapid flashing red dot for last 10s */
+        .timer-neon-pulse.warning {
+            background-color: #ff0055;
+            box-shadow: 0 0 8px #ff0055;
+            animation: timer-warning-flash 0.5s infinite steps(2);
+        }
+
+        @keyframes timer-indicator-pulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes timer-warning-flash {
+            0% {
+                opacity: 0.1;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .timer-val {
+            font-size: clamp(52px, 9vh, 80px);
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(0, 243, 255, 0.4);
+            line-height: 1;
+        }
+
+        /* Quit Button styled in theme */
+        .quit-btn {
+            background: linear-gradient(135deg, #ff0055, #a30036) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.4) !important;
+        }
+
+        .quit-btn:hover {
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.7), 0 0 15px rgba(255, 0, 85, 0.4) !important;
+        }
+
+        /* Notification overlay */
+        #msg-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 90px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 0, 183, 0.8), 0 0 40px rgba(0, 240, 255, 0.6);
+            pointer-events: none;
+            display: none;
+            font-style: italic;
+            z-index: 50;
+        }
+
+        /* Start / Pause / Game Over Menu Screen (ALIANZA Theme) */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 100;
+            color: white;
+            text-align: center;
+            transition: opacity 0.4s ease;
+        }
+
+        /* PAUSE MODE: semi-transparent, frosted glass blur, no flag bg */
+        #start-screen.pause-mode {
+            background: radial-gradient(circle at center, rgba(31, 11, 59, 0.75) 0%, rgba(8, 2, 18, 0.8) 100%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #start-screen.pause-mode #flags-bg-container {
+            display: none;
+        }
+
+        /* SOLID MODE: dark solid background behind flags */
+        #start-screen.solid-mode {
+            background: #080212;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        #start-screen.solid-mode #flags-bg-container {
+            display: flex;
+        }
+
+        /* Flags background container and rows styling */
+        #flags-bg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: stretch;
+            align-items: stretch;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.28;
+            /* Subdued background so text is readable */
+        }
+
+        .flag-row {
+            display: flex;
+            width: 200%;
+            height: calc(100vh / 6);
+            /* Dynamically divides screen height into 6 equal rows */
+            align-items: center;
+            white-space: nowrap;
+            gap: 24px;
+            /* Horizontal gap between flags */
+        }
+
+        .flag-row img {
+            height: calc(100% - 16px);
+            /* Uniform gap between rows */
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            object-fit: cover;
+            aspect-ratio: 3 / 2;
+        }
+
+        .row-right {
+            animation: scroll-right 50s linear infinite;
+        }
+
+        .row-left {
+            animation: scroll-left 50s linear infinite;
+        }
+
+        @keyframes scroll-right {
+
+            0% {
+                transform: translateX(-50%);
+            }
+
+            100% {
+                transform: translateX(0%);
+            }
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0%);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .start-content {
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(15, 6, 30, 0.45);
+            border-radius: 30px;
+            border: 2px solid rgba(255, 0, 183, 0.3);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.1);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .bucc-logo {
+            max-height: 80px;
+            width: auto;
+            height: auto;
+            margin-top: 15px;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
+            transition: all 0.3s ease;
+        }
+
+        .start-logo {
+            max-height: 300px;
+            width: auto;
+            margin-bottom: 25px;
+            /* Clear gap between event logo and game name */
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.2));
+        }
+
+        .logo-title {
+            font-size: clamp(36px, 5.5vw, 56px);
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff00b7 0%, #ffc800 25%, #00ff87 50%, #00f0ff 75%, #b900ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+        }
+
+        .logo-subtitle {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 5px;
+            color: #00f0ff;
+            margin-top: 8px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+        }
+
+        .event-tag {
+            display: inline-block;
+            padding: 8px 18px;
+            background: rgba(255, 0, 183, 0.1);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ff00b7;
+            border: 1px solid rgba(255, 0, 183, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .controls-info {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #d1cbe0;
+            margin-bottom: 35px;
+        }
+
+        .start-btn {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            color: white;
+            background: linear-gradient(135deg, #ff00b7, #8000ff);
+            border: none;
+            padding: 16px 45px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 0, 183, 0.4);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 183, 0.7), 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+
+        .sound-toggle {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+            cursor: pointer;
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        /* Rules Screen Custom Styling */
+        .rules-title {
+            font-size: clamp(24px, 4vh, 36px);
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #ff00b7, #00f0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(255, 0, 183, 0.2);
+        }
+
+        .controls-visualizer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(15px, 3vw, 40px);
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: clamp(10px, 2.5vh, 20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .control-key-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .key {
+            width: clamp(34px, 4.5vw, 44px);
+            height: clamp(34px, 4.5vw, 44px);
+            background: rgba(13, 6, 28, 0.85);
+            border: 1.5px solid rgba(255, 0, 183, 0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(13px, 1.8vw, 16px);
+            font-weight: 900;
+            color: #ffffff;
+            box-shadow: 0 4px 0 rgba(255, 0, 183, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 5px rgba(255, 0, 183, 0.5);
+        }
+
+        .control-key-group:last-of-type .key {
+            border-color: rgba(0, 243, 255, 0.5);
+            box-shadow: 0 4px 0 rgba(0, 243, 255, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        .key.empty {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .control-key-desc {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .control-divider {
+            font-size: 14px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-action-desc {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #00f3ff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
+            text-transform: uppercase;
+        }
+
+        .rules-text-section {
+            text-align: left;
+            background: rgba(0, 0, 0, 0.25);
+            padding: clamp(12px, 2.2vh, 20px) 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: clamp(12px, 1.8vh, 14.5px);
+            line-height: 1.45;
+            color: #d1cbe0;
+        }
+
+        .rule-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .rule-bullet {
+            font-weight: 900;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .rule-bullet.magenta {
+            color: #ff00b7;
+            text-shadow: 0 0 8px rgba(255, 0, 183, 0.6);
+        }
+
+        .rule-bullet.cyan {
+            color: #00f3ff;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+        }
+
+        .rule-text {
+            flex: 1;
+        }
+
+        /* Back Button Style */
+        .back-btn {
+            background: transparent !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: none !important;
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .back-btn:hover {
+            border-color: #ffffff !important;
+            color: #ffffff !important;
+            transform: scale(1.05);
+        }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+
+</head>
+
+<body>
+    <!-- Preloaded Audio Elements to bypass file:// CORS restrictions -->
+    <audio id="sound-start" src="sound/start_sound.mp3" preload="auto"></audio>
+    <audio id="sound-goal" src="sound/goal_sound.mp3" preload="auto"></audio>
+    <audio id="sound-end" src="sound/end_sound.mp3" preload="auto"></audio>
+
+    <!-- New Stylish Top Scoreboard HUD -->
+    <div class="top-hud">
+        <!-- Top Row: Scores and Pause button in between -->
+        <div class="hud-row-top">
+            <!-- Home Score Box -->
+            <div class="hud-box score-box home-score-box">
+                <span class="team-label" id="p1-team-label">HUMAN</span>
+                <div class="hud-value" id="player-score-top">0</div>
+            </div>
+
+            <!-- Pause Button (Middle) -->
+            <button class="hud-box pause-box" onclick="togglePause()">
+                <svg viewBox="0 0 24 24" class="pause-icon">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+            </button>
+
+            <!-- Away Score Box -->
+            <div class="hud-box score-box away-score-box">
+                <div class="hud-value" id="cpu-score-top">0</div>
+                <span class="team-label" id="cpu-team-label">AI</span>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Timer -->
+        <div class="hud-row-bottom">
+            <div class="hud-box timer-box">
+                <div class="timer-neon-pulse" id="timer-dot"></div>
+                <div class="hud-value timer-val" id="game-timer-top">01:10</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen Messages -->
+    <div id="msg-overlay">GOAL!</div>
+
+    <!-- Start Overlay Screen -->
+    <div id="start-screen" class="solid-mode">
+        <!-- Flags background -->
+        <div id="flags-bg-container"></div>
+        <!-- Main Menu Panel -->
+        <div class="start-content" id="main-menu-content">
+            <img src="alianza logo.png" class="start-logo" alt="Alianza Logo">
+            <h1 class="logo-title">BUCC_Mini_Soccer</h1>
+            <h2 class="logo-subtitle"></h2>
+            <p class="controls-info" style="display: none;"></p>
+            <div class="btn-group" id="menu-btn-group"
+                style="display: flex; gap: 20px; justify-content: center; align-items: center; margin-top: 10px;">
+                <button class="start-btn" id="start-btn-main" onclick="goToRules()">START</button>
+                <button class="start-btn quit-btn" id="start-btn-quit" onclick="quitGame()" style="display: none;">QUIT
+                    GAME</button>
+            </div>
+            <div class="sound-toggle" onclick="toggleMute()">
+                <span id="sound-icon">🔊</span> Sound Effects: On
+            </div>
+        </div>
+
+        <!-- Game Mode Selection Panel -->
+        <div class="start-content" id="game-mode-menu-content" style="display: none; max-width: 500px;">
+            <img src="alianza logo.png" class="start-logo" alt="Alianza Logo">
+            <h1 class="logo-title" style="font-size: 2.2rem; margin-bottom: 25px;">SELECT GAME MODE</h1>
+            <div class="btn-group" style="display: flex; flex-direction: column; gap: 18px; width: 100%; align-items: center; margin-top: 10px;">
+                <button class="start-btn" onclick="selectGameMode('ai')" style="width: 250px;">HUMAN VS AI</button>
+                <button class="start-btn" onclick="selectGameMode('human')" style="width: 250px;">HUMAN VS HUMAN</button>
+                <button class="start-btn back-btn" onclick="backToMainFromMode()" style="width: 150px; margin-top: 15px;">BACK</button>
+            </div>
+        </div>
+
+        <!-- Rules & Controls Panel (Second Page) -->
+        <div class="start-content" id="rules-menu-content" style="display: none; max-width: 650px;">
+            <h1 class="rules-title">GAME RULES & CONTROLS</h1>
+
+            <!-- Keyboard key drawing container -->
+            <div class="controls-visualizer">
+                <div class="control-key-group">
+                    <div class="keyboard-grid">
+                        <div class="key empty"></div>
+                        <div class="key">W</div>
+                        <div class="key empty"></div>
+                        <div class="key">A</div>
+                        <div class="key">S</div>
+                        <div class="key">D</div>
+                    </div>
+                    <div class="control-key-desc">ARROW KEYS</div>
+                </div>
+                <div class="control-divider">OR</div>
+                <div class="control-key-group">
+                    <div class="keyboard-grid">
+                        <div class="key empty"></div>
+                        <div class="key">▲</div>
+                        <div class="key empty"></div>
+                        <div class="key">◀</div>
+                        <div class="key">▼</div>
+                        <div class="key">▶</div>
+                    </div>
+                    <div class="control-key-desc">WASD KEYS</div>
+                </div>
+            </div>
+            <div class="control-action-desc">MOVE YOUR YELLOW BOT</div>
+
+            <div class="rules-text-section">
+                <div class="rule-item">
+                    <span class="rule-bullet magenta">•</span>
+                    <span class="rule-text">Move into the ball to possess and dribble it. Press <strong>SPACE</strong> when contacting the ball to perform a powerful kick!</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-bullet cyan">•</span>
+                    <span class="rule-text">Score in the opponent's <strong style="color: #00f3ff;">Blue Goal</strong>
+                        (right side) to gain points.</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-bullet magenta">•</span>
+                    <span class="rule-text">Defend your own <strong style="color: #ff9000;">Yellow Goal</strong> (left
+                        side) from opponent bots.</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-bullet cyan">•</span>
+                    <span class="rule-text">The player with the most goals when the <strong>70-second</strong> timer
+                        runs out wins!</span>
+                </div>
+            </div>
+
+            <div class="btn-group"
+                style="display: flex; gap: 20px; justify-content: center; align-items: center; margin-top: 25px;">
+                <button class="start-btn back-btn" onclick="backToModeSelect()">BACK</button>
+                <button class="start-btn kick-off-btn" onclick="startGame()">KICK OFF</button>
+            </div>
+        </div>
+
+        <!-- Rules & Controls Panel (Human vs Human 1v1) -->
+        <div class="start-content" id="rules-human-content" style="display: none; max-width: 750px;">
+            <h1 class="rules-title">HUMAN VS HUMAN CONTROLS</h1>
+
+            <div class="controls-visualizer-1v1" style="display: flex; gap: 40px; align-items: stretch; justify-content: center; background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 15px;">
+                <!-- Left Player (Yellow) -->
+                <div class="player-column" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 15px;">
+                    <div style="color: #ffd700; font-size: 14px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 8px rgba(255,215,0,0.4);">PLAYER 1 (LEFT / YELLOW)</div>
+                    <div class="keyboard-grid">
+                        <div class="key empty"></div>
+                        <div class="key">W</div>
+                        <div class="key empty"></div>
+                        <div class="key">A</div>
+                        <div class="key">S</div>
+                        <div class="key">D</div>
+                    </div>
+                    <div class="control-key-desc">MOVE KEYS</div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%;">
+                        <div class="key" style="width: 140px; height: clamp(34px, 4.5vw, 44px); border-color: rgba(255, 0, 183, 0.5); box-shadow: 0 4px 0 rgba(255, 0, 183, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1); text-shadow: 0 0 5px rgba(255, 0, 183, 0.5);">SPACE</div>
+                        <div class="control-key-desc">KICK / PASS</div>
+                    </div>
+                    <!-- Name Input Box Left -->
+                    <div style="margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <input type="text" id="p1-name-input" placeholder="ENTER P1 NAME" maxlength="10"
+                               style="width: 160px; padding: 8px 12px; background: rgba(13, 6, 28, 0.85); border: 1.5px solid rgba(255, 0, 183, 0.5); border-radius: 8px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 10px rgba(255, 0, 183, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.1); outline: none; transition: border-color 0.2s, box-shadow 0.2s;"
+                               onfocus="this.style.borderColor='#ff00b7'; this.style.boxShadow='0 0 15px rgba(255, 0, 183, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.1)';"
+                               onblur="this.style.borderColor='rgba(255, 0, 183, 0.5)'; this.style.boxShadow='0 0 10px rgba(255, 0, 183, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.1)';">
+                    </div>
+                </div>
+
+                <!-- Vertical Divider -->
+                <div class="vertical-divider" style="width: 1px; background: rgba(255, 255, 255, 0.15); align-self: stretch;"></div>
+
+                <!-- Right Player (Blue) -->
+                <div class="player-column" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 15px;">
+                    <div style="color: #00f3ff; font-size: 14px; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,243,255,0.4);">PLAYER 2 (RIGHT / BLUE)</div>
+                    <div class="keyboard-grid">
+                        <div class="key empty"></div>
+                        <div class="key">8</div>
+                        <div class="key empty"></div>
+                        <div class="key">4</div>
+                        <div class="key">5</div>
+                        <div class="key">6</div>
+                    </div>
+                    <div class="control-key-desc">NUMPAD MOVE</div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%;">
+                        <div class="key" style="width: 90px; height: clamp(34px, 4.5vw, 44px); border-color: rgba(0, 243, 255, 0.5); box-shadow: 0 4px 0 rgba(0, 243, 255, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1); text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);">NUM 0</div>
+                        <div class="control-key-desc">KICK / PASS</div>
+                    </div>
+                    <!-- Name Input Box Right -->
+                    <div style="margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <input type="text" id="p2-name-input" placeholder="ENTER P2 NAME" maxlength="10"
+                               style="width: 160px; padding: 8px 12px; background: rgba(13, 6, 28, 0.85); border: 1.5px solid rgba(0, 243, 255, 0.5); border-radius: 8px; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 10px rgba(0, 243, 255, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.1); outline: none; transition: border-color 0.2s, box-shadow 0.2s;"
+                               onfocus="this.style.borderColor='#00f3ff'; this.style.boxShadow='0 0 15px rgba(0, 243, 255, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.1)';"
+                               onblur="this.style.borderColor='rgba(0, 243, 255, 0.5)'; this.style.boxShadow='0 0 10px rgba(0, 243, 255, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.1)';">
+                    </div>
+                </div>
+            </div>
+
+            <div class="rules-text-section">
+                <div class="rule-item">
+                    <span class="rule-bullet magenta">•</span>
+                    <span class="rule-text">Move into the ball to possess and dribble it. Press your kick key when contacting the ball to perform a powerful shot!</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-bullet cyan">•</span>
+                    <span class="rule-text">Player 1 scores in the right <strong style="color: #00f3ff;">Blue Goal</strong>; Player 2 scores in the left <strong style="color: #ff9000;">Yellow Goal</strong>.</span>
+                </div>
+                <div class="rule-item">
+                    <span class="rule-bullet magenta">•</span>
+                    <span class="rule-text">Touch the ball from the opponent's side to snatch/tackle the ball away!</span>
+                </div>
+            </div>
+
+            <div class="btn-group"
+                style="display: flex; gap: 20px; justify-content: center; align-items: center; margin-top: 25px;">
+                <button class="start-btn back-btn" onclick="backToModeSelect()">BACK</button>
+                <button class="start-btn kick-off-btn" onclick="startGame()">KICK OFF</button>
+            </div>
+        </div>
+
+        <!-- BUCC logo -->
+        <img id="bucc-logo-box" src="bucc-logo.png" class="bucc-logo" alt="BUCC Logo">
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const FIELD_WIDTH = 30;
+        const FIELD_HEIGHT = 18;
+        let pScore = 0;
+        let cScore = 0;
+        let timeLeft = 70;
+        let gameActive = false;
+        let isPaused = false;
+        let timerInterval = null;
+        let cornerStuckTimer = 0;
+        let lastTime = performance.now();
+        let possessedBot = null;
+        const tackleCooldowns = { player: 0, defender1: 0, goalieA: 0, goalieB: 0 };
+        let gameMode = 'ai'; // 'ai' or 'human'
+
+        // --- KEYBOARD CONTROLS SETUP ---
+        const keys = {
+            w: false, a: false, s: false, d: false,
+            arrowup: false, arrowdown: false, arrowleft: false, arrowright: false,
+            space: false,
+            numpadUp: false, numpadDown: false, numpadLeft: false, numpadRight: false,
+            numpadKick: false
+        };
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                return;
+            }
+            const key = e.key.toLowerCase();
+            if (key in keys) keys[key] = true;
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                keys.space = true;
+            }
+
+            // Right player (numpad) controls mapping
+            if (e.code === 'Numpad8' || e.key === '8') {
+                keys.numpadUp = true;
+            }
+            if (e.code === 'Numpad5' || e.key === '5') {
+                keys.numpadDown = true;
+            }
+            if (e.code === 'Numpad4' || e.key === '4') {
+                keys.numpadLeft = true;
+            }
+            if (e.code === 'Numpad6' || e.key === '6') {
+                keys.numpadRight = true;
+            }
+            if (e.code === 'Numpad0' || e.key === '0' || e.key === 'Insert') {
+                e.preventDefault();
+                keys.numpadKick = true;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                return;
+            }
+            const key = e.key.toLowerCase();
+            if (key in keys) keys[key] = false;
+            if (e.key === ' ' || e.code === 'Space') {
+                keys.space = false;
+            }
+
+            // Right player (numpad) controls mapping
+            if (e.code === 'Numpad8' || e.key === '8') {
+                keys.numpadUp = false;
+            }
+            if (e.code === 'Numpad5' || e.key === '5') {
+                keys.numpadDown = false;
+            }
+            if (e.code === 'Numpad4' || e.key === '4') {
+                keys.numpadLeft = false;
+            }
+            if (e.code === 'Numpad6' || e.key === '6') {
+                keys.numpadRight = false;
+            }
+            if (e.code === 'Numpad0' || e.key === '0' || e.key === 'Insert') {
+                keys.numpadKick = false;
+            }
+        });
+
+        // --- RETRO SOUND SYNTHESIZER (Web Audio API) ---
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playAudioElement(key) {
+                if (this.muted) return;
+                const audioEl = document.getElementById('sound-' + key);
+                if (audioEl) {
+                    audioEl.currentTime = 0;
+                    audioEl.play().catch(err => {
+                        console.warn("Failed to play local audio element " + key + ":", err);
+                        // Fallback to synth if play fails
+                        this.init();
+                        if (key === 'start') this.playWhistle(0.85);
+                        if (key === 'goal') this.playWhistle(0.20);
+                        if (key === 'end') this.playThreeWhistlesSynth();
+                    });
+                } else {
+                    this.init();
+                    if (key === 'start') this.playWhistle(0.85);
+                    if (key === 'goal') this.playWhistle(0.20);
+                    if (key === 'end') this.playThreeWhistlesSynth();
+                }
+            }
+            playLongWhistle() {
+                this.playAudioElement('start');
+            }
+            playShortWhistle() {
+                this.playAudioElement('goal');
+            }
+            playThreeShortWhistles() {
+                this.playAudioElement('end');
+            }
+            playThreeWhistlesSynth() {
+                const now = this.ctx.currentTime;
+                this.playWhistle(0.18, now);
+                this.playWhistle(0.18, now + 0.30);
+                this.playWhistle(0.35, now + 0.60);
+            }
+            playWhistle(duration = 0.4, startTime = null) {
+                this.init();
+                const now = startTime !== null ? startTime : this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(1200, now);
+                osc1.frequency.exponentialRampToValueAtTime(1500, now + 0.12 * duration);
+
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1215, now);
+                osc2.frequency.exponentialRampToValueAtTime(1515, now + 0.12 * duration);
+
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.25, now + 0.03 * duration);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + duration);
+                osc2.stop(now + duration);
+            }
+            playKick() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(35, now + 0.1);
+
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+            playTackle() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Synth electric buzz/zap sound
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.25);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.25);
+
+                // Add tiny white noise burst for crunch
+                const bufferSize = this.ctx.sampleRate * 0.08;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.12, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                noise.connect(noiseGain);
+                noiseGain.connect(this.ctx.destination);
+                noise.start(now);
+                noise.stop(now + 0.08);
+            }
+            playGoal() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Chime arpeggio chord
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+
+                    gain.gain.setValueAtTime(0, now + i * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.2, now + i * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.35);
+                });
+            }
+            playTick() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(900, now);
+
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.04);
+            }
+        }
+        const sounds = new SoundEffects();
+
+        // --- SCENE & RENDERER SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0e021a); // Dark Purple base
+
+        // --- PERFECT 3D PERSPECTIVE CAMERA SETUP ---
+        // Field of view: 45 degrees, Near clipping: 0.1, Far clipping: 1000
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 22, 16); // Higher and closer to minimize bottom gap
+        camera.lookAt(0, 0, -2); // Look slightly past center to shift field down
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+        scene.add(ambientLight);
+
+        // Target spot/directional lighting for shadows
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(-5, 25, -5);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -22;
+        dirLight.shadow.camera.right = 22;
+        dirLight.shadow.camera.top = 16;
+        dirLight.shadow.camera.bottom = -16;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 40;
+        scene.add(dirLight);
+
+        // --- PROCEDURAL TEXTURES GENERATION ---
+        // 1. Grass Turf Texture (16 Vertical Stripes + Noise)
+        const grassCanvas = document.createElement('canvas');
+        grassCanvas.width = 1024;
+        grassCanvas.height = 512;
+        const grassCtx = grassCanvas.getContext('2d');
+        const stripeWidth = 1024 / 16;
+        for (let i = 0; i < 16; i++) {
+            grassCtx.fillStyle = (i % 2 === 0) ? '#3ca240' : '#45b84a';
+            grassCtx.fillRect(i * stripeWidth, 0, stripeWidth, 512);
+        }
+        // Add grass blade noise
+        for (let i = 0; i < 12000; i++) {
+            const x = Math.random() * 1024;
+            const y = Math.random() * 512;
+            const h = Math.random() * 3 + 2;
+            grassCtx.fillStyle = Math.random() > 0.5 ? '#348c37' : '#4dcf53';
+            grassCtx.fillRect(x, y, 1.5, h);
+        }
+        const grassTexture = new THREE.CanvasTexture(grassCanvas);
+
+        // 2. Classic Soccer Ball Hexagonal Pattern
+        const ballCanvas = document.createElement('canvas');
+        ballCanvas.width = 256;
+        ballCanvas.height = 128;
+        const ballCtx = ballCanvas.getContext('2d');
+        ballCtx.fillStyle = '#ffffff';
+        ballCtx.fillRect(0, 0, 256, 128);
+        ballCtx.fillStyle = '#111111';
+        // Draw hex pattern coordinates
+        const hexCenters = [
+            [32, 32], [96, 32], [160, 32], [224, 32],
+            [64, 96], [128, 96], [192, 96], [256, 96]
+        ];
+        hexCenters.forEach(([cx, cy]) => {
+            ballCtx.beginPath();
+            ballCtx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ballCtx.fill();
+        });
+        const ballTexture = new THREE.CanvasTexture(ballCanvas);
+
+        // 3. Goalpost Net Grid Texture
+        const netCanvas = document.createElement('canvas');
+        netCanvas.width = 64;
+        netCanvas.height = 64;
+        const netCtx = netCanvas.getContext('2d');
+        netCtx.clearRect(0, 0, 64, 64);
+        netCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        netCtx.lineWidth = 1.5;
+        // Vertical lines
+        for (let i = 0; i <= 64; i += 8) {
+            netCtx.beginPath(); netCtx.moveTo(i, 0); netCtx.lineTo(i, 64); netCtx.stroke();
+            netCtx.beginPath(); netCtx.moveTo(0, i); netCtx.lineTo(64, i); netCtx.stroke();
+        }
+        const netTexture = new THREE.CanvasTexture(netCanvas);
+        netTexture.wrapS = THREE.RepeatWrapping;
+        netTexture.wrapT = THREE.RepeatWrapping;
+        netTexture.repeat.set(4, 2);
+
+        // 4. BUCC Logo Base64 String
+        const buccLogoBase64 = 'data:image/png;base64,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LZse6ZeIKDk5mf7v//5PoEfzV+PGjen111+n7OxscSxvb6dfv/ylX3c2m00cwxGSP/vsM5o+fbrHeTKueU3TSNVUUslONodKNiL67XwuNZ0wg15YsJ2yiMihaWQjjVSyOZuO3gQpt2P3X7JkCX777TeYzWZYLBbMmTMHvXr1QklJiXByebKRuepps9nwyy+/ICEhARcuXAARISIiAj169MCwYcNgsVjcdu7ly5dj37598Pf3x8svv4xz585h5syZOHHiBPz9/dG9e3c888wz8PHxwdWrVzF79mzs3LkTqqqidevWeP755xETEyOkeElJCebOnYuLFy+iYcOGGDNmDA4fPowFCxaIjLEmTZrgqaeeQtOmTd12uM2bN2PdunWQZRlt27bFwIED3TSLGTNmIDk5GbIsY8iQIWjevDkWLVqETZs2oaioCA6HA9evX8fHH38Mf39/REVF4dlnnxUakCzLWL9+PZYvX45Lly5BlmVER0dj5MiR6Natm4BTM5vN2LhxI7Zs2QJFUfDcc8+htLQUn376KQ4ePIg333wTvXv3dnNycS1ixowZKCgogCRJ6NChA+bOnYuQkBCUlpa6AXUaq+aMkQS+G6empmLWrFnQNA2hoaEYPXo0goKChCa0e/durFy5EhaLBa1atcKDDz7o0aehKArWr1+PhQsX4urVq5BlGT169MBjjz0mdtnKAIJyrYPfC9eUuHYRExODqVOnYty4cTh69CgyMzNFa/tatWoJk5M3otX7kniKL9da/0gDdwfpcWYKqlXO7SAwqOSM9CuMQZGcLcg112d/NBC5eSce3aoWwLHWAdDjjz8upK2+zbWx0SSXgElJSdSvX79y+wr07NmTjhw5IjQBIqKnnnqKAJCfnx99+OGHFBkZWeZ748ePp0OHDlGrVq3KfNahQwe6cOGCaF5pt9upXbt2BIDatGlDCxYsoGrVqpX5Xo0aNWjx4sXltigfNWqU225VUlIiGmBC15eANzM1mUwky7Jbm/QGDRqQpmlkt9spJyeHnnvuOZIkqcxYLBYLffrpp+RwOMT13nzzTQJAvr6+tGTJEmrTpo04fubMmQKvn2tDmqbR+fPnKTw8nACQ2WwWvQ74cfqmo3rNwagBDBgwwK1HA38/OjpaNGLl4/z000/LzBnXACwWCwGguLg4ev755z2uidatW9PJkyc9ahM3ahRq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';
+
+        // Pre-load BUCC logo texture using Image() for file:// compatibility
+        const buccLogoTexture = new THREE.Texture();
+        const buccLogoImage = new Image();
+        buccLogoImage.onload = function () {
+            buccLogoTexture.image = buccLogoImage;
+            buccLogoTexture.needsUpdate = true;
+        };
+        buccLogoImage.src = buccLogoBase64;
+
+        // Shared material for all BUCC logo decals
+        const buccLogoMat = new THREE.MeshBasicMaterial({
+            map: buccLogoTexture,
+            transparent: true,
+            alphaTest: 0.05,
+            side: THREE.DoubleSide
+        });
+
+        // --- ENVIRONMENT SETUP ---
+        // Pitch Plane
+        const pitchGeo = new THREE.PlaneGeometry(FIELD_WIDTH, FIELD_HEIGHT);
+        const pitchMat = new THREE.MeshStandardMaterial({ map: grassTexture, roughness: 0.65 });
+        const pitch = new THREE.Mesh(pitchGeo, pitchMat);
+        pitch.rotation.x = -Math.PI / 2;
+        pitch.receiveShadow = true;
+        scene.add(pitch);
+
+        // Stadium Outer Floor (Dark purple)
+        const outerGeo = new THREE.PlaneGeometry(100, 70);
+        const outerMat = new THREE.MeshStandardMaterial({ color: 0x0a0215, roughness: 0.8 });
+        const outerFloor = new THREE.Mesh(outerGeo, outerMat);
+        outerFloor.rotation.x = -Math.PI / 2;
+        outerFloor.position.y = -0.05;
+        outerFloor.receiveShadow = false;
+        scene.add(outerFloor);
+
+        // Glowing Neon Tube Side-borders (ALIANZA Theme: Cyan & Pink)
+        function createNeonTube(colorHex, x, z, length, rotateZ = false) {
+            const geo = new THREE.CylinderGeometry(0.07, 0.07, length, 8);
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+            const tube = new THREE.Mesh(geo, mat);
+            if (rotateZ) tube.rotation.z = Math.PI / 2;
+            else tube.rotation.x = Math.PI / 2;
+            tube.position.set(x, 0.06, z);
+            scene.add(tube);
+            return tube;
+        }
+        // Top edge: pink neon tube
+        createNeonTube(0xff0088, 0, -FIELD_HEIGHT / 2 - 0.25, FIELD_WIDTH, true);
+        // Bottom edge: cyan neon tube
+        createNeonTube(0x00f3ff, 0, FIELD_HEIGHT / 2 + 0.25, FIELD_WIDTH, true);
+
+        // Left goal lines sides neon (adjusted to match shorter sidebars: length 4.7, center ±6.65)
+        createNeonTube(0xff0088, -FIELD_WIDTH / 2 - 0.25, -6.65, 4.7);
+        createNeonTube(0x00f3ff, -FIELD_WIDTH / 2 - 0.25, 6.65, 4.7);
+
+        // Right goal lines sides neon
+        createNeonTube(0xff0088, FIELD_WIDTH / 2 + 0.25, -6.65, 4.7);
+        createNeonTube(0x00f3ff, FIELD_WIDTH / 2 + 0.25, 6.65, 4.7);
+
+        // --- LINE MARKINGS ---
+        function createFieldLine(w, h, x, z) {
+            const geo = new THREE.PlaneGeometry(w, h);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(x, 0.015, z);
+            scene.add(mesh);
+            return mesh;
+        }
+        // Boundary outer lines
+        createFieldLine(FIELD_WIDTH, 0.08, 0, -FIELD_HEIGHT / 2);
+        createFieldLine(FIELD_WIDTH, 0.08, 0, FIELD_HEIGHT / 2);
+        createFieldLine(0.08, FIELD_HEIGHT, -FIELD_WIDTH / 2, 0);
+        createFieldLine(0.08, FIELD_HEIGHT, FIELD_WIDTH / 2, 0);
+        // Mid-field line
+        createFieldLine(0.08, FIELD_HEIGHT, 0, 0);
+
+        // Center Circle
+        const circleGeo = new THREE.RingGeometry(3.0, 3.08, 64);
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const centerCircle = new THREE.Mesh(circleGeo, lineMat);
+        centerCircle.rotation.x = -Math.PI / 2;
+        centerCircle.position.set(0, 0.015, 0);
+        scene.add(centerCircle);
+
+        // Penalty Boxes
+        createFieldLine(4, 0.08, -FIELD_WIDTH / 2 + 2, -5);
+        createFieldLine(4, 0.08, -FIELD_WIDTH / 2 + 2, 5);
+        createFieldLine(0.08, 10, -FIELD_WIDTH / 2 + 4, 0);
+
+        createFieldLine(4, 0.08, FIELD_WIDTH / 2 - 2, -5);
+        createFieldLine(4, 0.08, FIELD_WIDTH / 2 - 2, 5);
+        createFieldLine(0.08, 10, FIELD_WIDTH / 2 - 4, 0);
+
+        // --- CORNER ARCS & FLAGS ---
+        const flags = [];
+
+        function createCornerArc(x, z, thetaStart) {
+            const geo = new THREE.RingGeometry(0.8, 0.86, 32, 1, thetaStart, Math.PI / 2);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(x, 0.015, z);
+            scene.add(mesh);
+        }
+
+        function createCornerFlag(cornerX, cornerZ, isLeft) {
+            const flagGroup = new THREE.Group();
+
+            // Flagpole (thin cylinder)
+            const poleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.8, 8);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2 });
+            const pole = new THREE.Mesh(poleGeo, poleMat);
+            pole.position.y = 1.4;
+            pole.castShadow = true;
+            flagGroup.add(pole);
+
+            // Flag Cloth (Plane geometry with segments to allow deformation)
+            const flagGeo = new THREE.PlaneGeometry(1.1, 0.65, 10, 10);
+            flagGeo.translate(0.55, 0, 0); // shift pivot to left edge
+
+            const flagColor = isLeft ? 0xff0088 : 0x00f3ff;
+            const flagMat = new THREE.MeshStandardMaterial({
+                color: flagColor,
+                side: THREE.DoubleSide,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            const flagMesh = new THREE.Mesh(flagGeo, flagMat);
+            flagMesh.position.set(0, 2.5, 0);
+            flagMesh.castShadow = true;
+            flagGroup.add(flagMesh);
+
+            // Offset from the corner towards the center of the field (placing inside the corner arc)
+            const dirX = cornerX < 0 ? 1 : -1;
+            const dirZ = cornerZ < 0 ? 1 : -1;
+            const offsetX = dirX * 0.35;
+            const offsetZ = dirZ * 0.35;
+
+            flagGroup.position.set(cornerX + offsetX, 0, cornerZ + offsetZ);
+            scene.add(flagGroup);
+
+            // Store the flag mesh for the wave animation
+            flags.push(flagMesh);
+        }
+
+        // Create the 4 Corner Arcs
+        createCornerArc(-FIELD_WIDTH / 2, -FIELD_HEIGHT / 2, 1.5 * Math.PI); // Top-Left
+        createCornerArc(FIELD_WIDTH / 2, -FIELD_HEIGHT / 2, Math.PI);        // Top-Right
+        createCornerArc(-FIELD_WIDTH / 2, FIELD_HEIGHT / 2, 0);               // Bottom-Left
+        createCornerArc(FIELD_WIDTH / 2, FIELD_HEIGHT / 2, 0.5 * Math.PI);    // Bottom-Right
+
+        // Create the 4 Corner Flags (Left side: Magenta, Right side: Cyan)
+        createCornerFlag(-FIELD_WIDTH / 2, -FIELD_HEIGHT / 2, true);  // Top-Left
+        createCornerFlag(-FIELD_WIDTH / 2, FIELD_HEIGHT / 2, true);   // Bottom-Left
+        createCornerFlag(FIELD_WIDTH / 2, -FIELD_HEIGHT / 2, false);  // Top-Right
+        createCornerFlag(FIELD_WIDTH / 2, FIELD_HEIGHT / 2, false);   // Bottom-Right
+
+        // --- PROCEDURAL 3D GOALPOSTS ---
+        function createGoalpost(xPos, facingLeft) {
+            const goalGroup = new THREE.Group();
+            const GOAL_WIDTH = 8.6;   // Width of the goal mouth (z-axis) - increased from 7.0 to 8.6
+            const GOAL_HEIGHT = 4.2;  // Height of the crossbar - increased from 3.2 to 4.2
+            const GOAL_DEPTH = 2.0;   // Depth of the goal (how far back the net goes)
+            const POST_RADIUS = 0.08;
+            const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15, metalness: 0.6 });
+
+            // Left Post (front)
+            const leftPostGeo = new THREE.CylinderGeometry(POST_RADIUS, POST_RADIUS, GOAL_HEIGHT, 12);
+            const leftPost = new THREE.Mesh(leftPostGeo, postMat);
+            leftPost.position.set(0, GOAL_HEIGHT / 2, -GOAL_WIDTH / 2);
+            leftPost.castShadow = true;
+            goalGroup.add(leftPost);
+
+            // Right Post (front)
+            const rightPost = new THREE.Mesh(leftPostGeo, postMat);
+            rightPost.position.set(0, GOAL_HEIGHT / 2, GOAL_WIDTH / 2);
+            rightPost.castShadow = true;
+            goalGroup.add(rightPost);
+
+            // Crossbar (top front)
+            const crossbarGeo = new THREE.CylinderGeometry(POST_RADIUS, POST_RADIUS, GOAL_WIDTH, 12);
+            const crossbar = new THREE.Mesh(crossbarGeo, postMat);
+            crossbar.rotation.x = Math.PI / 2;
+            crossbar.position.set(0, GOAL_HEIGHT, 0);
+            crossbar.castShadow = true;
+            goalGroup.add(crossbar);
+
+            // Back posts (rear uprights)
+            const depthDir = facingLeft ? -GOAL_DEPTH : GOAL_DEPTH;
+            const backLeftPost = new THREE.Mesh(leftPostGeo, postMat);
+            backLeftPost.position.set(depthDir, GOAL_HEIGHT / 2, -GOAL_WIDTH / 2);
+            backLeftPost.castShadow = true;
+            goalGroup.add(backLeftPost);
+
+            const backRightPost = new THREE.Mesh(leftPostGeo, postMat);
+            backRightPost.position.set(depthDir, GOAL_HEIGHT / 2, GOAL_WIDTH / 2);
+            backRightPost.castShadow = true;
+            goalGroup.add(backRightPost);
+
+            // Top back crossbar
+            const backCrossbar = new THREE.Mesh(crossbarGeo, postMat);
+            backCrossbar.rotation.x = Math.PI / 2;
+            backCrossbar.position.set(depthDir, GOAL_HEIGHT, 0);
+            backCrossbar.castShadow = true;
+            goalGroup.add(backCrossbar);
+
+            // Top side rails (connecting front to back top)
+            const sideRailGeo = new THREE.CylinderGeometry(POST_RADIUS * 0.7, POST_RADIUS * 0.7, GOAL_DEPTH, 8);
+            const sideRailL = new THREE.Mesh(sideRailGeo, postMat);
+            sideRailL.rotation.z = Math.PI / 2;
+            sideRailL.position.set(depthDir / 2, GOAL_HEIGHT, -GOAL_WIDTH / 2);
+            goalGroup.add(sideRailL);
+
+            const sideRailR = new THREE.Mesh(sideRailGeo, postMat);
+            sideRailR.rotation.z = Math.PI / 2;
+            sideRailR.position.set(depthDir / 2, GOAL_HEIGHT, GOAL_WIDTH / 2);
+            goalGroup.add(sideRailR);
+
+            // --- NET LINES (thin cylinder grid) ---
+            const NET_LINE_RADIUS = 0.015;
+            const NET_SPACING = 0.5; // Gap between net lines
+            const netLineMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.55 });
+
+            // Helper: create a thin cylinder line between two points
+            function addNetLine(p1, p2) {
+                const dx = p2[0] - p1[0], dy = p2[1] - p1[1], dz = p2[2] - p1[2];
+                const length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                const geo = new THREE.CylinderGeometry(NET_LINE_RADIUS, NET_LINE_RADIUS, length, 4);
+                const mesh = new THREE.Mesh(geo, netLineMat);
+                mesh.position.set((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2);
+                // Orient cylinder along the line direction
+                const dir = new THREE.Vector3(dx, dy, dz).normalize();
+                const up = new THREE.Vector3(0, 1, 0);
+                const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
+                mesh.setRotationFromQuaternion(quat);
+                goalGroup.add(mesh);
+            }
+
+            // BACK NET (vertical grid at x = depthDir, spanning z and y)
+            // Horizontal lines
+            for (let y = NET_SPACING; y < GOAL_HEIGHT; y += NET_SPACING) {
+                addNetLine([depthDir, y, -GOAL_WIDTH / 2], [depthDir, y, GOAL_WIDTH / 2]);
+            }
+            // Vertical lines
+            for (let z = -GOAL_WIDTH / 2; z <= GOAL_WIDTH / 2; z += NET_SPACING) {
+                addNetLine([depthDir, 0, z], [depthDir, GOAL_HEIGHT, z]);
+            }
+
+            // TOP NET (horizontal grid at y = GOAL_HEIGHT, spanning x and z)
+            // Lines along Z (sideline direction)
+            for (let x = 0; Math.abs(x) <= Math.abs(depthDir); x += (depthDir > 0 ? NET_SPACING : -NET_SPACING)) {
+                addNetLine([x, GOAL_HEIGHT, -GOAL_WIDTH / 2], [x, GOAL_HEIGHT, GOAL_WIDTH / 2]);
+                if (x === 0) continue; // avoid duplicate at front
+            }
+            // Lines along X (depth direction)
+            for (let z = -GOAL_WIDTH / 2; z <= GOAL_WIDTH / 2; z += NET_SPACING) {
+                addNetLine([0, GOAL_HEIGHT, z], [depthDir, GOAL_HEIGHT, z]);
+            }
+
+            // SIDE NETS (vertical grid on left and right side panels)
+            [-GOAL_WIDTH / 2, GOAL_WIDTH / 2].forEach(zPos => {
+                // Horizontal lines
+                for (let y = NET_SPACING; y < GOAL_HEIGHT; y += NET_SPACING) {
+                    addNetLine([0, y, zPos], [depthDir, y, zPos]);
+                }
+                // Vertical lines
+                for (let x = 0; Math.abs(x) <= Math.abs(depthDir); x += (depthDir > 0 ? NET_SPACING : -NET_SPACING)) {
+                    addNetLine([x, 0, zPos], [x, GOAL_HEIGHT, zPos]);
+                    if (x === 0) continue;
+                }
+            });
+
+
+            // Floor plane under the goal net
+            const floorGeo = new THREE.PlaneGeometry(GOAL_DEPTH, GOAL_WIDTH);
+            const floorMat = new THREE.MeshBasicMaterial({
+                color: facingLeft ? 0xe5a519 : 0x1074e6,
+                side: THREE.DoubleSide
+            });
+            const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.set(depthDir / 2, 0.005, 0);
+            goalGroup.add(floorMesh);
+
+            goalGroup.position.set(xPos, 0, 0);
+            scene.add(goalGroup);
+            return goalGroup;
+        }
+
+        // Place the two goalposts
+        createGoalpost(-FIELD_WIDTH / 2, true);   // Left goal (net extends to the left/outside)
+        createGoalpost(FIELD_WIDTH / 2, false);   // Right goal (net extends to the right/outside)
+
+
+        // --- 3D ADVERTISING BOARDS ---
+        function createAdBoard(x, zStart, zEnd, isLeftTeam) {
+            const length = Math.abs(zEnd - zStart);
+            const zPos = (zStart + zEnd) / 2;
+
+            const geo = new THREE.BoxGeometry(0.18, 2.2, length);
+            const mat = new THREE.MeshStandardMaterial({
+                color: isLeftTeam ? 0xe5a519 : 0x1074e6,
+                roughness: 0.4
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, 1.1, zPos);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            // Add one BUCC logo decal using the shared pre-loaded texture
+            // Scale logo width to 82% of length, height to 41% of length (clamped to max 5x2.5) to prevent overflow
+            const logoWidth = Math.min(5.0, length * 0.82);
+            const logoHeight = Math.min(2.5, length * 0.41);
+            const logoGeo = new THREE.PlaneGeometry(logoWidth, logoHeight);
+            const logoMesh = new THREE.Mesh(logoGeo, buccLogoMat);
+
+            // Position and rotate the decal so it faces inside the field
+            const relativeX = isLeftTeam ? 0.095 : -0.095;
+            const rotY = isLeftTeam ? Math.PI / 2 : -Math.PI / 2;
+            logoMesh.position.set(relativeX, 0, 0);
+            logoMesh.rotation.y = rotY;
+            mesh.add(logoMesh);
+
+            return mesh;
+        }
+        // Team A (Yellow) Sideboards on Left Goal Line (adjusted from -3.5/3.5 to -4.3/4.3 for wider goals)
+        createAdBoard(-FIELD_WIDTH / 2 - 0.1, -FIELD_HEIGHT / 2, -4.3, true);
+        createAdBoard(-FIELD_WIDTH / 2 - 0.1, 4.3, FIELD_HEIGHT / 2, true);
+        // Team B (Blue) Sideboards on Right Goal Line (adjusted from -3.5/3.5 to -4.3/4.3 for wider goals)
+        createAdBoard(FIELD_WIDTH / 2 + 0.1, -FIELD_HEIGHT / 2, -4.3, false);
+        createAdBoard(FIELD_WIDTH / 2 + 0.1, 4.3, FIELD_HEIGHT / 2, false);
+
+        // Top Edge Advertising Boards (split into two team halves)
+        (function () {
+            const halfLen = FIELD_WIDTH / 2;
+            const logoGeo = new THREE.PlaneGeometry(6.5, 2.5);
+
+            // Blue top board (Team B - right half)
+            const topBoardGeoB = new THREE.BoxGeometry(halfLen, 2.2, 0.18);
+            const topBoardMatB = new THREE.MeshStandardMaterial({ color: 0x1074e6, roughness: 0.4 });
+            const topBoardB = new THREE.Mesh(topBoardGeoB, topBoardMatB);
+            topBoardB.position.set(FIELD_WIDTH / 4, 1.1, -FIELD_HEIGHT / 2 - 0.1);
+            topBoardB.castShadow = true;
+            topBoardB.receiveShadow = true;
+            scene.add(topBoardB);
+
+            // 2 logos on blue top board
+            const logoB1 = new THREE.Mesh(logoGeo, buccLogoMat);
+            logoB1.position.set(-3.5, 0, 0.095);
+            topBoardB.add(logoB1);
+
+            const logoB2 = new THREE.Mesh(logoGeo, buccLogoMat);
+            logoB2.position.set(3.5, 0, 0.095);
+            topBoardB.add(logoB2);
+
+            // Yellow top board (Team A - left half)
+            const topBoardGeoA = new THREE.BoxGeometry(halfLen, 2.2, 0.18);
+            const topBoardMatA = new THREE.MeshStandardMaterial({ color: 0xe5a519, roughness: 0.4 });
+            const topBoardA = new THREE.Mesh(topBoardGeoA, topBoardMatA);
+            topBoardA.position.set(-FIELD_WIDTH / 4, 1.1, -FIELD_HEIGHT / 2 - 0.1);
+            topBoardA.castShadow = true;
+            topBoardA.receiveShadow = true;
+            scene.add(topBoardA);
+
+            // 2 logos on yellow top board
+            const logoA1 = new THREE.Mesh(logoGeo, buccLogoMat);
+            logoA1.position.set(-3.5, 0, 0.095);
+            topBoardA.add(logoA1);
+
+            const logoA2 = new THREE.Mesh(logoGeo, buccLogoMat);
+            logoA2.position.set(3.5, 0, 0.095);
+            topBoardA.add(logoA2);
+        })();
+
+        // Truss grid shadows removed as requested.
+
+        // --- PROCEDURAL TOY SOCCER BOTS (Minecraft style blocky characters) ---
+        function createRobot(bodyColor, ringColor) {
+            const group = new THREE.Group();
+
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xfad3a2, roughness: 0.5 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x4a2c11, roughness: 0.6 });
+            const shirtMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.4 });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }); // White shorts
+            const shoeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
+
+            // 1. Torso / Body (Rounded Box)
+            const torsoGeo = new THREE.RoundedBoxGeometry(0.5, 0.75, 0.28, 4, 0.05);
+            const torsoMesh = new THREE.Mesh(torsoGeo, shirtMat);
+            torsoMesh.position.y = 0.95;
+            torsoMesh.castShadow = true;
+            torsoMesh.receiveShadow = true;
+            group.add(torsoMesh);
+
+            // 2. Head (Rounded Box)
+            const headGeo = new THREE.RoundedBoxGeometry(0.5, 0.5, 0.5, 4, 0.06);
+            const headMesh = new THREE.Mesh(headGeo, skinMat);
+            headMesh.position.y = 1.55;
+            headMesh.castShadow = true;
+            headMesh.receiveShadow = true;
+            group.add(headMesh);
+
+            // Hair (flat rounded box on top & back of head)
+            const hairGeo = new THREE.RoundedBoxGeometry(0.54, 0.18, 0.54, 3, 0.03);
+            const hairMesh = new THREE.Mesh(hairGeo, hairMat);
+            hairMesh.position.set(0, 1.8, 0);
+            hairMesh.castShadow = true;
+            group.add(hairMesh);
+
+            // Hair back
+            const hairBackGeo = new THREE.RoundedBoxGeometry(0.12, 0.35, 0.54, 3, 0.03);
+            const hairBack = new THREE.Mesh(hairBackGeo, hairMat);
+            hairBack.position.set(-0.21, 1.55, 0);
+            hairBack.castShadow = true;
+            group.add(hairBack);
+
+            // 3. Blocky Eyes in Front (+X is forward)
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const eyeWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+            // Left Eye
+            const eyeW_L = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, 0.12), eyeWhiteMat);
+            eyeW_L.position.set(0.26, 1.58, 0.13);
+            group.add(eyeW_L);
+            const eyeB_L = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.06), eyeMat);
+            eyeB_L.position.set(0.27, 1.58, 0.16);
+            group.add(eyeB_L);
+
+            // Right Eye
+            const eyeW_R = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, 0.12), eyeWhiteMat);
+            eyeW_R.position.set(0.26, 1.58, -0.13);
+            group.add(eyeW_R);
+            const eyeB_R = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.08, 0.06), eyeMat);
+            eyeB_R.position.set(0.27, 1.58, -0.16);
+            group.add(eyeB_R);
+
+            // 4. Arms (Alternating walk joints)
+            const armW = 0.16, armH = 0.65, armD = 0.16;
+
+            // Left Arm
+            const leftArmJoint = new THREE.Group();
+            leftArmJoint.position.set(0, 1.25, 0.24);
+            // Upper sleeve part
+            const lSleeve = new THREE.Mesh(new THREE.RoundedBoxGeometry(armW, armH * 0.5, armD, 3, 0.03), shirtMat);
+            lSleeve.position.y = -armH * 0.25;
+            lSleeve.castShadow = true;
+            leftArmJoint.add(lSleeve);
+            // Lower skin part
+            const lHand = new THREE.Mesh(new THREE.RoundedBoxGeometry(armW * 0.9, armH * 0.5, armD * 0.9, 3, 0.03), skinMat);
+            lHand.position.y = -armH * 0.75;
+            lHand.castShadow = true;
+            leftArmJoint.add(lHand);
+            group.add(leftArmJoint);
+
+            // Right Arm
+            const rightArmJoint = new THREE.Group();
+            rightArmJoint.position.set(0, 1.25, -0.24);
+            // Upper sleeve part
+            const rSleeve = new THREE.Mesh(new THREE.RoundedBoxGeometry(armW, armH * 0.5, armD, 3, 0.03), shirtMat);
+            rSleeve.position.y = -armH * 0.25;
+            rSleeve.castShadow = true;
+            rightArmJoint.add(rSleeve);
+            // Lower skin part
+            const rHand = new THREE.Mesh(new THREE.RoundedBoxGeometry(armW * 0.9, armH * 0.5, armD * 0.9, 3, 0.03), skinMat);
+            rHand.position.y = -armH * 0.75;
+            rHand.castShadow = true;
+            rightArmJoint.add(rHand);
+            group.add(rightArmJoint);
+
+            // 5. Legs
+            const legW = 0.18, legH = 0.6, legD = 0.18;
+
+            // Left Leg
+            const leftLegJoint = new THREE.Group();
+            leftLegJoint.position.set(0, 0.55, 0.12);
+            // Pants part (shorts)
+            const lPants = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW, legH * 0.4, legD, 3, 0.03), pantsMat);
+            lPants.position.y = -legH * 0.2;
+            lPants.castShadow = true;
+            leftLegJoint.add(lPants);
+            // Skin part
+            const lLegSkin = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW * 0.95, legH * 0.4, legD * 0.95, 3, 0.03), skinMat);
+            lLegSkin.position.y = -legH * 0.6;
+            lLegSkin.castShadow = true;
+            leftLegJoint.add(lLegSkin);
+            // Shoe part
+            const lShoe = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW * 1.05, legH * 0.2, legD * 1.05, 3, 0.03), shoeMat);
+            lShoe.position.y = -legH * 0.9;
+            lShoe.castShadow = true;
+            leftLegJoint.add(lShoe);
+            group.add(leftLegJoint);
+
+            // Right Leg
+            const rightLegJoint = new THREE.Group();
+            rightLegJoint.position.set(0, 0.55, -0.12);
+            // Pants part (shorts)
+            const rPants = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW, legH * 0.4, legD, 3, 0.03), pantsMat);
+            rPants.position.y = -legH * 0.2;
+            rPants.castShadow = true;
+            rightLegJoint.add(rPants);
+            // Skin part
+            const rLegSkin = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW * 0.95, legH * 0.4, legD * 0.95, 3, 0.03), skinMat);
+            rLegSkin.position.y = -legH * 0.6;
+            rLegSkin.castShadow = true;
+            rightLegJoint.add(rLegSkin);
+            // Shoe part
+            const rShoe = new THREE.Mesh(new THREE.RoundedBoxGeometry(legW * 1.05, legH * 0.2, legD * 1.05, 3, 0.03), shoeMat);
+            rShoe.position.y = -legH * 0.9;
+            rShoe.castShadow = true;
+            rightLegJoint.add(rShoe);
+            group.add(rightLegJoint);
+
+            // 6. Team Selector Glowing Tracker Ring at Base
+            const ringGeo = new THREE.TorusGeometry(0.55, 0.035, 8, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: ringColor });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.02;
+            group.add(ring);
+
+            group.scale.set(1.45, 1.45, 1.45);
+            scene.add(group);
+            return {
+                mesh: group,
+                radius: 0.94, // Scaled up physics radius (0.65 * 1.45)
+                invincible: false,
+                invincibleTime: 0,
+                leftArmJoint,
+                rightArmJoint,
+                leftLegJoint,
+                rightLegJoint,
+                lastX: 0,
+                lastZ: 0,
+                walkTime: 0,
+                trackerRingMat: ringMat,
+                defaultRingColor: ringColor
+            };
+        }
+
+        // Instantiate Players/Bots matching color configuration
+        // Team A (Yellow Tracker Rings)
+        const player = createRobot(0xffd700, 0xffff00);    // User (Yellow Torso, Yellow ring)
+        const goalieA = createRobot(0xff8000, 0xffff00);   // AI Goalie A (Orange Torso, Yellow ring)
+
+        // Team B (Blue Tracker Rings)
+        const defender1 = createRobot(0x0e5fe2, 0x00f3ff); // AI Defender 1 (Blue Torso, Blue ring)
+        const goalieB = createRobot(0x0e5fe2, 0x00f3ff);   // AI Goalie B (Blue Torso, Blue ring)
+
+        // --- THE SOCCER BALL ---
+        const ballGeo = new THREE.SphereGeometry(0.42, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({
+            map: ballTexture,
+            roughness: 0.35,
+            metalness: 0.05
+        });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        ball.position.set(0, 0.42, 0);
+        ball.castShadow = true;
+        scene.add(ball);
+
+        const ballPhys = { x: 0, z: 0, vx: 0, vz: 0, radius: 0.42 };
+
+        // --- POSITION INITIALIZATION / RESET ---
+        function resetPositions() {
+            cornerStuckTimer = 0;
+            player.mesh.position.set(-8, 0, 0);
+            player.mesh.rotation.set(0, 0, 0); // Face opponent goal (+X)
+            player.invincible = false;
+            player.mesh.visible = true;
+
+            goalieA.mesh.position.set(-13.5, 0, 0);
+            goalieA.mesh.rotation.set(0, 0, 0);
+
+            defender1.mesh.position.set(8, 0, 3);
+            defender1.mesh.rotation.set(0, Math.PI, 0); // Face user goal (-X)
+
+            goalieB.mesh.position.set(13.5, 0, 0);
+            goalieB.mesh.rotation.set(0, Math.PI, 0);
+
+            ballPhys.x = 0; ballPhys.z = 0;
+            ballPhys.vx = 0; ballPhys.vz = 0;
+            ball.position.set(0, 0.42, 0);
+
+            // Reset possession and tackle cooldown states
+            possessedBot = null;
+            if (typeof tackleCooldowns !== 'undefined') {
+                tackleCooldowns.player = 0;
+                tackleCooldowns.defender1 = 0;
+                tackleCooldowns.goalieA = 0;
+                tackleCooldowns.goalieB = 0;
+            }
+        }
+        resetPositions();
+
+        // --- HUD MANAGEMENT ---
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateScores() {
+            document.getElementById('player-score-top').innerText = pScore;
+            document.getElementById('cpu-score-top').innerText = cScore;
+            document.getElementById('game-timer-top').innerText = formatTime(timeLeft);
+        }
+
+        function showOverlay(text) {
+            const el = document.getElementById('msg-overlay');
+            el.innerText = text;
+            el.style.display = 'block';
+
+            // Color custom text-glows for different events
+            if (text === "GOAL!") {
+                el.style.textShadow = "0 0 20px #00ff87, 0 0 40px #00f0ff";
+            } else if (text === "CONCEDED!") {
+                el.style.textShadow = "0 0 20px #ff0055, 0 0 40px #ff9000";
+            } else if (text === "TACKLED!") {
+                el.style.textShadow = "0 0 20px #ffe600, 0 0 40px #ff0055";
+            } else {
+                el.style.textShadow = "0 0 20px #ff00b7, 0 0 40px #00f0ff";
+            }
+
+            setTimeout(() => {
+                if (gameActive && !isPaused) el.style.display = 'none';
+            }, 1400);
+        }
+
+        // --- MENU INTERFACES ---
+        function goToRules() {
+            if (sounds) sounds.init();
+            document.getElementById('main-menu-content').style.display = 'none';
+            document.getElementById('game-mode-menu-content').style.display = 'block';
+            const buccBox = document.getElementById('bucc-logo-box');
+            if (buccBox) buccBox.style.display = 'none';
+        }
+
+        function selectGameMode(mode) {
+            if (sounds) sounds.init();
+            gameMode = mode;
+            document.getElementById('game-mode-menu-content').style.display = 'none';
+            if (mode === 'ai') {
+                document.getElementById('rules-menu-content').style.display = 'block';
+            } else {
+                document.getElementById('rules-human-content').style.display = 'block';
+            }
+        }
+
+        function backToModeSelect() {
+            if (sounds) sounds.init();
+            document.getElementById('rules-menu-content').style.display = 'none';
+            document.getElementById('rules-human-content').style.display = 'none';
+            document.getElementById('game-mode-menu-content').style.display = 'block';
+        }
+
+        function backToMainFromMode() {
+            if (sounds) sounds.init();
+            resetNameInputs();
+            document.getElementById('game-mode-menu-content').style.display = 'none';
+            document.getElementById('main-menu-content').style.display = 'block';
+            const buccBox = document.getElementById('bucc-logo-box');
+            if (buccBox) buccBox.style.display = 'block';
+        }
+
+        function backToMain() {
+            if (sounds) sounds.init();
+            resetNameInputs();
+            document.getElementById('rules-menu-content').style.display = 'none';
+            document.getElementById('rules-human-content').style.display = 'none';
+            document.getElementById('main-menu-content').style.display = 'block';
+            const buccBox = document.getElementById('bucc-logo-box');
+            if (buccBox) buccBox.style.display = 'block';
+        }
+
+        function resetNameInputs() {
+            const p1 = document.getElementById('p1-name-input');
+            const p2 = document.getElementById('p2-name-input');
+            if (p1) p1.value = "";
+            if (p2) p2.value = "";
+        }
+
+        function toggleMute() {
+            sounds.muted = !sounds.muted;
+            document.querySelector('.sound-toggle').innerHTML = sounds.muted ?
+                `<span id="sound-icon">🔇</span> Sound Effects: Off` :
+                `<span id="sound-icon">🔊</span> Sound Effects: On`;
+            sounds.init();
+        }
+
+        function startGame() {
+            document.activeElement.blur();
+            sounds.init();
+            sounds.playLongWhistle();
+
+            document.getElementById('start-screen').style.opacity = '0';
+            document.getElementById('start-screen').style.pointerEvents = 'none';
+
+            // Hide rules / game mode panels
+            document.getElementById('game-mode-menu-content').style.display = 'none';
+            document.getElementById('rules-menu-content').style.display = 'none';
+            document.getElementById('rules-human-content').style.display = 'none';
+
+            // Set HUD team labels dynamically
+            const p1Label = document.getElementById('p1-team-label');
+            const p2Label = document.getElementById('cpu-team-label');
+            if (gameMode === 'human') {
+                const p1NameVal = document.getElementById('p1-name-input').value.trim();
+                const p2NameVal = document.getElementById('p2-name-input').value.trim();
+                if (p1Label) {
+                    p1Label.innerText = p1NameVal !== "" ? p1NameVal.toUpperCase() : 'P1';
+                }
+                if (p2Label) {
+                    p2Label.innerText = p2NameVal !== "" ? p2NameVal.toUpperCase() : 'P2';
+                }
+            } else {
+                if (p1Label) p1Label.innerText = 'HUMAN';
+                if (p2Label) p2Label.innerText = 'AI';
+            }
+
+            pScore = 0;
+            cScore = 0;
+            timeLeft = 70;
+            updateScores();
+            resetPositions();
+
+            // Reset warning dot state
+            const dot = document.getElementById('timer-dot');
+            if (dot) dot.classList.remove('warning');
+
+            gameActive = true;
+            isPaused = false;
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!gameActive) return;
+                timeLeft--;
+                document.getElementById('game-timer-top').innerText = formatTime(timeLeft);
+
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    sounds.playTick();
+                    document.getElementById('game-timer-top').style.color = '#ff0055';
+                    const d = document.getElementById('timer-dot');
+                    if (d) d.classList.add('warning');
+                } else {
+                    document.getElementById('game-timer-top').style.color = '#fff';
+                    const d = document.getElementById('timer-dot');
+                    if (d) d.classList.remove('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function abortGame() {
+            isPaused = false;
+            endGame();
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            sounds.playThreeShortWhistles();
+
+            // Ensure main menu content is shown instead of rules
+            document.getElementById('rules-menu-content').style.display = 'none';
+            document.getElementById('rules-human-content').style.display = 'none';
+            document.getElementById('game-mode-menu-content').style.display = 'none';
+            document.getElementById('main-menu-content').style.display = 'block';
+            const buccBox = document.getElementById('bucc-logo-box');
+            if (buccBox) buccBox.style.display = 'block';
+
+            document.getElementById('start-screen').className = 'solid-mode';
+            document.getElementById('start-screen').style.opacity = '1';
+            document.getElementById('start-screen').style.pointerEvents = 'auto';
+
+            const title = document.querySelector('.logo-title');
+            const subtitle = document.querySelector('.logo-subtitle');
+            const info = document.querySelector('.controls-info');
+            const mainBtn = document.getElementById('start-btn-main');
+            const quitBtn = document.getElementById('start-btn-quit');
+
+            // Hide controls-info for game over screen
+            info.style.display = 'none';
+            info.innerText = "";
+
+            if (gameMode === 'human') {
+                const p1NameVal = document.getElementById('p1-name-input').value.trim().toUpperCase();
+                const p2NameVal = document.getElementById('p2-name-input').value.trim().toUpperCase();
+                const p1Name = p1NameVal !== "" ? p1NameVal : "PLAYER 1";
+                const p2Name = p2NameVal !== "" ? p2NameVal : "PLAYER 2";
+                title.innerText = pScore > cScore ? `${p1Name} WINS!` : (pScore < cScore ? `${p2Name} WINS!` : "DRAW!");
+            } else {
+                title.innerText = pScore > cScore ? "VICTORY!" : (pScore < cScore ? "DEFEAT!" : "DRAW!");
+            }
+
+            if (pScore > cScore) {
+                title.style.background = 'linear-gradient(90deg, #00ff87, #00f3ff)';
+            } else if (pScore < cScore) {
+                title.style.background = 'linear-gradient(90deg, #ff0055, #ff9000)';
+            } else {
+                title.style.background = 'linear-gradient(90deg, #ffd700, #ff8000)';
+            }
+            title.style.webkitBackgroundClip = 'text';
+
+            subtitle.innerText = `FINAL SCORE: ${pScore} - ${cScore}`;
+
+            mainBtn.innerText = "REPLAY";
+            mainBtn.onclick = startGame;
+
+            quitBtn.innerText = "QUIT";
+            quitBtn.onclick = quitGame;
+            quitBtn.style.display = 'inline-block';
+        }
+
+        function togglePause() {
+            document.activeElement.blur();
+            if (!gameActive) return;
+
+            isPaused = !isPaused;
+            const mainBtn = document.getElementById('start-btn-main');
+            const quitBtn = document.getElementById('start-btn-quit');
+
+            if (isPaused) {
+                clearInterval(timerInterval);
+                // Ensure main menu content is shown instead of rules
+                document.getElementById('rules-menu-content').style.display = 'none';
+                document.getElementById('main-menu-content').style.display = 'block';
+                const buccBox = document.getElementById('bucc-logo-box');
+                if (buccBox) buccBox.style.display = 'none';
+
+                document.getElementById('start-screen').className = 'pause-mode';
+                document.getElementById('start-screen').style.opacity = '1';
+                document.getElementById('start-screen').style.pointerEvents = 'auto';
+
+                // Show controls-info for pause screen text
+                document.querySelector('.controls-info').style.display = 'block';
+
+                document.querySelector('.logo-title').innerText = "PAUSED";
+                document.querySelector('.logo-title').style.background = 'linear-gradient(90deg, #ffea00, #ff8000)';
+                document.querySelector('.logo-title').style.webkitBackgroundClip = 'text';
+
+                document.querySelector('.logo-subtitle').innerText = "BUCC SOCCER ARCADE";
+                document.querySelector('.controls-info').innerText = "The match is paused. Press RESUME to get back on the pitch.";
+
+                mainBtn.innerText = "RESUME";
+                mainBtn.onclick = togglePause;
+
+                quitBtn.innerText = "ABORT";
+                quitBtn.onclick = abortGame;
+                quitBtn.style.display = 'inline-block';
+            } else {
+                document.getElementById('start-screen').style.opacity = '0';
+                document.getElementById('start-screen').style.pointerEvents = 'none';
+
+                timerInterval = setInterval(() => {
+                    if (!gameActive) return;
+                    timeLeft--;
+                    document.getElementById('game-timer-top').innerText = formatTime(timeLeft);
+
+                    if (timeLeft <= 10 && timeLeft > 0) {
+                        sounds.playTick();
+                        document.getElementById('game-timer-top').style.color = '#ff0055';
+                        const d = document.getElementById('timer-dot');
+                        if (d) d.classList.add('warning');
+                    } else {
+                        document.getElementById('game-timer-top').style.color = '#fff';
+                        const d = document.getElementById('timer-dot');
+                        if (d) d.classList.remove('warning');
+                    }
+
+                    if (timeLeft <= 0) endGame();
+                }, 1000);
+            }
+        }
+
+        function quitGame() {
+            document.activeElement.blur();
+            gameActive = false;
+            isPaused = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            pScore = 0;
+            cScore = 0;
+            timeLeft = 70;
+            updateScores();
+            resetPositions();
+
+            // Reset warning dot state
+            const dot = document.getElementById('timer-dot');
+            if (dot) dot.classList.remove('warning');
+
+            const title = document.querySelector('.logo-title');
+            const subtitle = document.querySelector('.logo-subtitle');
+            const info = document.querySelector('.controls-info');
+            const mainBtn = document.getElementById('start-btn-main');
+            const quitBtn = document.getElementById('start-btn-quit');
+
+            // Hide controls-info again on main screen
+            info.style.display = 'none';
+
+            title.innerText = "BUCC_Mini_Soccer";
+            title.style.background = 'linear-gradient(90deg, #ff00b7 0%, #ffc800 25%, #00ff87 50%, #00f0ff 75%, #b900ff 100%)';
+            title.style.webkitBackgroundClip = 'text';
+
+            subtitle.innerText = "";
+            info.innerText = "";
+
+            mainBtn.innerText = "START";
+            mainBtn.onclick = goToRules;
+
+            quitBtn.innerText = "QUIT";
+            quitBtn.onclick = quitGame;
+            quitBtn.style.display = 'none';
+
+            // Reset panels visibility and restore solid flags mode
+            resetNameInputs();
+            document.getElementById('start-screen').className = 'solid-mode';
+            document.getElementById('rules-menu-content').style.display = 'none';
+            document.getElementById('main-menu-content').style.display = 'block';
+            const buccBox = document.getElementById('bucc-logo-box');
+            if (buccBox) buccBox.style.display = 'block';
+        }
+
+
+
+        // --- ENGINE LOOP ---
+        const speed = 0.15;
+        const friction = 0.98;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const currentTime = performance.now();
+            let dt = (currentTime - lastTime) * 0.001;
+            lastTime = currentTime;
+            if (dt > 0.1) dt = 0.016;
+
+            // Render basic scene even when paused
+            if (!gameActive || isPaused) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // Decrease tackle cooldowns
+            for (let key in tackleCooldowns) {
+                if (tackleCooldowns[key] > 0) tackleCooldowns[key]--;
+            }
+
+            // Corner stuck foul detection
+            const distTL = Math.sqrt(Math.pow(ballPhys.x - (-15), 2) + Math.pow(ballPhys.z - (-9), 2));
+            const distBL = Math.sqrt(Math.pow(ballPhys.x - (-15), 2) + Math.pow(ballPhys.z - 9, 2));
+            const distTR = Math.sqrt(Math.pow(ballPhys.x - 15, 2) + Math.pow(ballPhys.z - (-9), 2));
+            const distBR = Math.sqrt(Math.pow(ballPhys.x - 15, 2) + Math.pow(ballPhys.z - 9, 2));
+
+            const inCorner = (distTL < 2.2 || distBL < 2.2 || distTR < 2.2 || distBR < 2.2);
+            if (inCorner) {
+                cornerStuckTimer += dt;
+                if (cornerStuckTimer >= 1.5) {
+                    cornerStuckTimer = 0;
+                    sounds.playWhistle();
+                    showOverlay("FOUL!");
+                    resetPositions();
+                }
+            } else {
+                cornerStuckTimer = 0;
+            }
+
+            // 1. Invincibility Blinking Handler
+            if (player.invincible) {
+                player.invincibleTime -= 1 / 60;
+                if (player.invincibleTime <= 0) {
+                    player.invincible = false;
+                    player.mesh.visible = true;
+                } else {
+                    player.mesh.visible = Math.floor(player.invincibleTime * 10) % 2 === 0;
+                }
+            }
+
+            // 2. User Player Controls (WASD & Arrows)
+            let dx = 0;
+            let dz = 0;
+            if (keys.w || keys.arrowup) dz -= 1;
+            if (keys.s || keys.arrowdown) dz += 1;
+            if (keys.a || keys.arrowleft) dx -= 1;
+            if (keys.d || keys.arrowright) dx += 1;
+
+            if (dx !== 0 || dz !== 0) {
+                const len = Math.sqrt(dx * dx + dz * dz);
+                player.mesh.position.x += (dx / len) * speed;
+                player.mesh.position.z += (dz / len) * speed;
+
+                // Rotate player towards movement vector
+                const angle = Math.atan2(-dz, dx);
+                player.mesh.rotation.y = angle;
+            }
+
+            // Visual indicator for ball possession
+            if (possessedBot === player) {
+                player.trackerRingMat.color.setHex(0xff3300); // Hot red-orange when possessing ball
+            } else {
+                player.trackerRingMat.color.setHex(player.defaultRingColor); // Yellow tracker ring
+            }
+
+            // Handle spacebar kick while in possession
+            if (keys.space && possessedBot === player) {
+                possessedBot = null;
+                const kx = Math.cos(player.mesh.rotation.y);
+                const kz = -Math.sin(player.mesh.rotation.y);
+                ballPhys.vx = kx * 0.52;
+                ballPhys.vz = kz * 0.52;
+                tackleCooldowns.player = 25; // Cooldown to let the ball fly away
+                sounds.playKick();
+            }
+
+            // 3. AI Behaviours
+            // Goalie A (Left) - defending left goal
+            const ballInBoxA = (ballPhys.x < -FIELD_WIDTH / 2 + 4.5) && (Math.abs(ballPhys.z) < 5.2);
+            let targetX_GA, targetZ_GA;
+            const speedGA = 0.11; // Balanced speed for goalkeeper challenge
+
+            if (ballInBoxA) {
+                targetX_GA = ballPhys.x;
+                targetZ_GA = ballPhys.z;
+            } else {
+                // Stand at the center of their boundary area (Z = 0)
+                targetX_GA = -FIELD_WIDTH / 2 + 0.8;
+                targetZ_GA = 0;
+            }
+
+            const dx_GA = targetX_GA - goalieA.mesh.position.x;
+            const dz_GA = targetZ_GA - goalieA.mesh.position.z;
+            const len_GA = Math.sqrt(dx_GA * dx_GA + dz_GA * dz_GA);
+            if (len_GA > 0.01) {
+                const step = Math.min(len_GA, speedGA);
+                goalieA.mesh.position.x += (dx_GA / len_GA) * step;
+                goalieA.mesh.position.z += (dz_GA / len_GA) * step;
+            }
+
+            // Dynamically rotate to face the ball at all times
+            const dxA = ballPhys.x - goalieA.mesh.position.x;
+            const dzA = ballPhys.z - goalieA.mesh.position.z;
+            goalieA.mesh.rotation.y = Math.atan2(-dzA, dxA);
+
+            // Goalie B (Right) - defending right goal
+            const ballInBoxB = (ballPhys.x > FIELD_WIDTH / 2 - 4.5) && (Math.abs(ballPhys.z) < 5.2);
+            let targetX_GB, targetZ_GB;
+            const speedGB = 0.11; // Balanced speed for goalkeeper challenge
+
+            if (ballInBoxB) {
+                targetX_GB = ballPhys.x;
+                targetZ_GB = ballPhys.z;
+            } else {
+                // Stand at the center of their boundary area (Z = 0)
+                targetX_GB = FIELD_WIDTH / 2 - 0.8;
+                targetZ_GB = 0;
+            }
+
+            const dx_GB = targetX_GB - goalieB.mesh.position.x;
+            const dz_GB = targetZ_GB - goalieB.mesh.position.z;
+            const len_GB = Math.sqrt(dx_GB * dx_GB + dz_GB * dz_GB);
+            if (len_GB > 0.01) {
+                const step = Math.min(len_GB, speedGB);
+                goalieB.mesh.position.x += (dx_GB / len_GB) * step;
+                goalieB.mesh.position.z += (dz_GB / len_GB) * step;
+            }
+
+            // Dynamically rotate to face the ball at all times
+            const dxB = ballPhys.x - goalieB.mesh.position.x;
+            const dzB = ballPhys.z - goalieB.mesh.position.z;
+            goalieB.mesh.rotation.y = Math.atan2(-dzB, dxB);
+
+
+
+            // Defender 1 (Blue): AI or Player 2 (Local Multiplayer)
+            if (gameMode === 'human') {
+                let d1x = 0;
+                let d1z = 0;
+                if (keys.numpadUp) d1z -= 1;
+                if (keys.numpadDown) d1z += 1;
+                if (keys.numpadLeft) d1x -= 1;
+                if (keys.numpadRight) d1x += 1;
+
+                if (d1x !== 0 || d1z !== 0) {
+                    const len = Math.sqrt(d1x * d1x + d1z * d1z);
+                    defender1.mesh.position.x += (d1x / len) * speed;
+                    defender1.mesh.position.z += (d1z / len) * speed;
+
+                    // Rotate Player 2 towards movement vector
+                    const angle = Math.atan2(-d1z, d1x);
+                    defender1.mesh.rotation.y = angle;
+                }
+
+                // Handle Player 2 kick while in possession
+                if (keys.numpadKick && possessedBot === defender1) {
+                    possessedBot = null;
+                    const kx = Math.cos(defender1.mesh.rotation.y);
+                    const kz = -Math.sin(defender1.mesh.rotation.y);
+                    ballPhys.vx = kx * 0.52;
+                    ballPhys.vz = kz * 0.52;
+                    tackleCooldowns.defender1 = 25; // Cooldown to let the ball fly away
+                    sounds.playKick();
+                }
+
+                // Visual indicator for Player 2 tracker ring (turn cyan to red-orange when possessing ball)
+                if (possessedBot === defender1) {
+                    defender1.trackerRingMat.color.setHex(0xff3300); // Hot red-orange when possessing ball
+                } else {
+                    defender1.trackerRingMat.color.setHex(defender1.defaultRingColor); // Blue tracker ring
+                }
+            } else {
+                // Keep default tracker ring color in AI mode
+                defender1.trackerRingMat.color.setHex(defender1.defaultRingColor);
+
+                // Defender 1 (Blue): Aggressive Chaser / Smart Attacker
+                let targetX_D1, targetZ_D1;
+                if (possessedBot === defender1) {
+                    // Aim for opposite goal corner (Z = -3.5 or 3.5) based on Goalie A's position
+                    targetX_D1 = -FIELD_WIDTH / 2;
+                    targetZ_D1 = goalieA.mesh.position.z > 0 ? -3.5 : 3.5;
+
+                    // If close to the box, shoot towards the corner!
+                    if (defender1.mesh.position.x < -3) {
+                        possessedBot = null;
+                        const shootDx = targetX_D1 - defender1.mesh.position.x;
+                        const shootDz = targetZ_D1 - defender1.mesh.position.z;
+                        const shootLen = Math.sqrt(shootDx * shootDx + shootDz * shootDz);
+                        ballPhys.vx = (shootDx / shootLen) * 0.46;
+                        ballPhys.vz = (shootDz / shootLen) * 0.46;
+                        tackleCooldowns.defender1 = 30; // Cooldown
+                        sounds.playKick();
+                    }
+                } else {
+                    targetX_D1 = ballPhys.x;
+                    targetZ_D1 = ballPhys.z;
+                }
+
+                const diffD1X = targetX_D1 - defender1.mesh.position.x;
+                const diffD1Z = targetZ_D1 - defender1.mesh.position.z;
+                const lenD1 = Math.sqrt(diffD1X * diffD1X + diffD1Z * diffD1Z);
+                if (lenD1 > 0.1) {
+                    defender1.mesh.position.x += (diffD1X / lenD1) * speed;
+                    defender1.mesh.position.z += (diffD1Z / lenD1) * speed;
+                    defender1.mesh.rotation.y = Math.atan2(-diffD1Z, diffD1X);
+                }
+            }
+
+
+
+            // 4. Clamping all bots to boundaries
+            const allBots = [player, defender1, goalieA, goalieB];
+            allBots.forEach(bot => {
+                const r = bot.radius;
+                if (bot === goalieA) {
+                    bot.mesh.position.x = Math.max(-FIELD_WIDTH / 2 - 0.5, Math.min(-FIELD_WIDTH / 2 + 3.2, bot.mesh.position.x));
+                    bot.mesh.position.z = Math.max(-4.3 + r, Math.min(4.3 - r, bot.mesh.position.z));
+                } else if (bot === goalieB) {
+                    bot.mesh.position.x = Math.max(FIELD_WIDTH / 2 - 3.2, Math.min(FIELD_WIDTH / 2 + 0.5, bot.mesh.position.x));
+                    bot.mesh.position.z = Math.max(-4.3 + r, Math.min(4.3 - r, bot.mesh.position.z));
+                } else {
+                    bot.mesh.position.x = Math.max(-FIELD_WIDTH / 2 + r, Math.min(FIELD_WIDTH / 2 - r, bot.mesh.position.x));
+                    bot.mesh.position.z = Math.max(-FIELD_HEIGHT / 2 + r, Math.min(FIELD_HEIGHT / 2 - r, bot.mesh.position.z));
+                }
+
+                // Blocky character walk animation cycle
+                if (bot.lastX === undefined) {
+                    bot.lastX = bot.mesh.position.x;
+                    bot.lastZ = bot.mesh.position.z;
+                    bot.walkTime = 0;
+                }
+                const dxMove = bot.mesh.position.x - bot.lastX;
+                const dzMove = bot.mesh.position.z - bot.lastZ;
+                const moveDist = Math.sqrt(dxMove * dxMove + dzMove * dzMove);
+
+                bot.lastX = bot.mesh.position.x;
+                bot.lastZ = bot.mesh.position.z;
+
+                if (moveDist > 0.005) {
+                    // Update walk animation phase based on movement distance
+                    bot.walkTime += moveDist * 2.8;
+                    const swing = Math.sin(bot.walkTime) * 0.7; // Swing back and forth (~40 degrees max)
+
+                    if (bot.leftArmJoint) bot.leftArmJoint.rotation.z = swing;
+                    if (bot.rightArmJoint) bot.rightArmJoint.rotation.z = -swing;
+                    if (bot.leftLegJoint) bot.leftLegJoint.rotation.z = -swing;
+                    if (bot.rightLegJoint) bot.rightLegJoint.rotation.z = swing;
+                } else {
+                    // Gradually return to standard upright/standing pose when stationary
+                    if (bot.leftArmJoint) bot.leftArmJoint.rotation.z *= 0.85;
+                    if (bot.rightArmJoint) bot.rightArmJoint.rotation.z *= 0.85;
+                    if (bot.leftLegJoint) bot.leftLegJoint.rotation.z *= 0.85;
+                    if (bot.rightLegJoint) bot.rightLegJoint.rotation.z *= 0.85;
+                }
+            });
+
+            // 5. Bot-to-Bot Physics Collisions (circles overlap resolution)
+            for (let i = 0; i < allBots.length; i++) {
+                for (let j = i + 1; j < allBots.length; j++) {
+                    const b1 = allBots[i];
+                    const b2 = allBots[j];
+                    const dx = b2.mesh.position.x - b1.mesh.position.x;
+                    const dz = b2.mesh.position.z - b1.mesh.position.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    const minDist = b1.radius + b2.radius;
+                    if (dist < minDist) {
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const nz = dz / dist;
+
+                        b1.mesh.position.x -= nx * overlap * 0.5;
+                        b1.mesh.position.z -= nz * overlap * 0.5;
+                        b2.mesh.position.x += nx * overlap * 0.5;
+                        b2.mesh.position.z += nz * overlap * 0.5;
+                    }
+                }
+            }
+
+
+
+            // 7. Ball Physics Vector Movement
+            ballPhys.vx *= friction;
+            ballPhys.vz *= friction;
+            ballPhys.x += ballPhys.vx;
+            ballPhys.z += ballPhys.vz;
+
+            // 8. Ball Collision with boundaries and goals
+            const ballR = ballPhys.radius;
+            // Top/Bottom walls
+            if (ballPhys.z < -FIELD_HEIGHT / 2 + ballR) {
+                ballPhys.z = -FIELD_HEIGHT / 2 + ballR;
+                ballPhys.vz = -ballPhys.vz * 0.8;
+            } else if (ballPhys.z > FIELD_HEIGHT / 2 - ballR) {
+                ballPhys.z = FIELD_HEIGHT / 2 - ballR;
+                ballPhys.vz = -ballPhys.vz * 0.8;
+            }
+
+            // Left Goalmouth Check
+            if (Math.abs(ballPhys.z) < 4.3 - ballR) {
+                if (ballPhys.x < -FIELD_WIDTH / 2) {
+                    // Back net collision
+                    if (ballPhys.x < -FIELD_WIDTH / 2 - 2 + ballR) {
+                        ballPhys.x = -FIELD_WIDTH / 2 - 2 + ballR;
+                        ballPhys.vx = -ballPhys.vx * 0.5;
+                    }
+                    // Trigger Goal for Team B (CPU)
+                    if (ballPhys.x < -FIELD_WIDTH / 2 - 1.2 && gameActive) {
+                        cScore++;
+                        updateScores();
+                        sounds.playShortWhistle();
+                        showOverlay("GOAL!");
+                        resetPositions();
+                    }
+                }
+            } else {
+                // Hit left solid wall
+                if (ballPhys.x < -FIELD_WIDTH / 2 + ballR) {
+                    ballPhys.x = -FIELD_WIDTH / 2 + ballR;
+                    ballPhys.vx = -ballPhys.vx * 0.8;
+                }
+            }
+
+            // Right Goalmouth Check
+            if (Math.abs(ballPhys.z) < 4.3 - ballR) {
+                if (ballPhys.x > FIELD_WIDTH / 2) {
+                    // Back net collision
+                    if (ballPhys.x > FIELD_WIDTH / 2 + 2 - ballR) {
+                        ballPhys.x = FIELD_WIDTH / 2 + 2 - ballR;
+                        ballPhys.vx = -ballPhys.vx * 0.5;
+                    }
+                    // Trigger Goal for Team A (Player)
+                    if (ballPhys.x > FIELD_WIDTH / 2 + 1.2 && gameActive) {
+                        pScore++;
+                        updateScores();
+                        sounds.playShortWhistle();
+                        showOverlay("GOAL!");
+                        resetPositions();
+                    }
+                }
+            } else {
+                // Hit right solid wall
+                if (ballPhys.x > FIELD_WIDTH / 2 - ballR) {
+                    ballPhys.x = FIELD_WIDTH / 2 - ballR;
+                    ballPhys.vx = -ballPhys.vx * 0.8;
+                }
+            }
+
+            // Left/Right inner net post boundaries clamping
+            if (ballPhys.x < -FIELD_WIDTH / 2) {
+                if (ballPhys.z < -4.3 + ballR) { ballPhys.z = -4.3 + ballR; ballPhys.vz = -ballPhys.vz * 0.5; }
+                if (ballPhys.z > 4.3 - ballR) { ballPhys.z = 4.3 - ballR; ballPhys.vz = -ballPhys.vz * 0.5; }
+            }
+            if (ballPhys.x > FIELD_WIDTH / 2) {
+                if (ballPhys.z < -4.3 + ballR) { ballPhys.z = -4.3 + ballR; ballPhys.vz = -ballPhys.vz * 0.5; }
+                if (ballPhys.z > 4.3 - ballR) { ballPhys.z = 4.3 - ballR; ballPhys.vz = -ballPhys.vz * 0.5; }
+            }
+
+            // Update Ball mesh positions and rotate ball based on speed
+            ball.position.x = ballPhys.x;
+            ball.position.z = ballPhys.z;
+
+            const ballSpeed = Math.sqrt(ballPhys.vx * ballPhys.vx + ballPhys.vz * ballPhys.vz);
+            if (ballSpeed > 0.005) {
+                // Rotate ball visual rotation
+                ball.rotation.z -= ballPhys.vx / ballR;
+                ball.rotation.x += ballPhys.vz / ballR;
+            }
+
+            // 9. Ball-to-Bot Elastic Collisions & Possession/Tackling
+            allBots.forEach(bot => {
+                const dx = ballPhys.x - bot.mesh.position.x;
+                const dz = ballPhys.z - bot.mesh.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                const minDist = bot.radius + ballPhys.radius;
+
+                const botName = bot === player ? 'player' : (bot === defender1 ? 'defender1' : (bot === goalieA ? 'goalieA' : 'goalieB'));
+
+                // We detect contact slightly early for smoother possession captures
+                if (dist < minDist + 0.1) {
+                    if (bot === goalieA || bot === goalieB) {
+                        // Goalies don't possess, they immediately clear/kick the ball
+                        if (dist < minDist) {
+                            const overlap = minDist - dist;
+                            ballPhys.x += (dx / dist) * overlap;
+                            ballPhys.z += (dz / dist) * overlap;
+                        }
+                        if (possessedBot !== null) {
+                            const prevOwner = possessedBot === player ? 'player' : 'defender1';
+                            tackleCooldowns[prevOwner] = 30;
+                            possessedBot = null;
+                        }
+                        const kx = Math.cos(bot.mesh.rotation.y);
+                        const kz = -Math.sin(bot.mesh.rotation.y);
+                        ballPhys.vx = kx * 0.38;
+                        ballPhys.vz = kz * 0.38;
+                        sounds.playKick();
+                    } else {
+                        // Outfield players: player and defender1
+                        if (possessedBot !== null && possessedBot !== bot) {
+                            // Opponent possession - TACKLE / SNATCH!
+                            // Ensure only opposite team members can snatch
+                            const isYellowBot = (bot === player || bot === goalieA);
+                            const isPossessorYellow = (possessedBot === player || possessedBot === goalieA);
+                            if (isYellowBot !== isPossessorYellow) {
+                                if (dist < minDist) {
+                                    const overlap = minDist - dist;
+                                    ballPhys.x += (dx / dist) * overlap;
+                                    ballPhys.z += (dz / dist) * overlap;
+                                }
+                                const prevOwnerName = possessedBot === player ? 'player' : 'defender1';
+                                tackleCooldowns[prevOwnerName] = 30; // Cooldown on tackled bot
+                                tackleCooldowns[botName] = 20; // Cooldown on tackling bot
+                                possessedBot = null;
+
+                                const kx = Math.cos(bot.mesh.rotation.y);
+                                const kz = -Math.sin(bot.mesh.rotation.y);
+                                ballPhys.vx = kx * 0.48; // Snatch kick
+                                ballPhys.vz = kz * 0.48;
+                            }
+                        } else if (possessedBot === null && tackleCooldowns[botName] === 0) {
+                            // Free ball, no cooldown - Capture possession
+                            possessedBot = bot;
+                            ballPhys.vx = 0;
+                            ballPhys.vz = 0;
+                        }
+                    }
+                }
+            });
+
+            // Apply dribble placement if ball is possessed
+            if (possessedBot !== null) {
+                const kx = Math.cos(possessedBot.mesh.rotation.y);
+                const kz = -Math.sin(possessedBot.mesh.rotation.y);
+                
+                // Roll the ball in front of the bot
+                ballPhys.x = possessedBot.mesh.position.x + kx * (possessedBot.radius + ballPhys.radius * 0.85);
+                ballPhys.z = possessedBot.mesh.position.z + kz * (possessedBot.radius + ballPhys.radius * 0.85);
+                ballPhys.vx = 0;
+                ballPhys.vz = 0;
+
+                // Clamp ball position to field boundaries while possessed
+                const ballLimitX = FIELD_WIDTH / 2 - ballPhys.radius;
+                const ballLimitZ = FIELD_HEIGHT / 2 - ballPhys.radius;
+                if (Math.abs(ballPhys.z) >= 4.3) {
+                    ballPhys.x = Math.max(-ballLimitX, Math.min(ballLimitX, ballPhys.x));
+                } else {
+                    ballPhys.x = Math.max(-ballLimitX - 1.8, Math.min(ballLimitX + 1.8, ballPhys.x));
+                }
+                ballPhys.z = Math.max(-ballLimitZ, Math.min(ballLimitZ, ballPhys.z));
+
+                // Visual ball rolling rotation during possession based on input/target velocity
+                let vx = 0;
+                let vz = 0;
+                if (possessedBot === player) {
+                    let pdx = 0; let pdz = 0;
+                    if (keys.w || keys.arrowup) pdz -= 1;
+                    if (keys.s || keys.arrowdown) pdz += 1;
+                    if (keys.a || keys.arrowleft) pdx -= 1;
+                    if (keys.d || keys.arrowright) pdx += 1;
+                    if (pdx !== 0 || pdz !== 0) {
+                        const len = Math.sqrt(pdx * pdx + pdz * pdz);
+                        vx = (pdx / len) * speed;
+                        vz = (pdz / len) * speed;
+                    }
+                } else if (possessedBot === defender1) {
+                    if (gameMode === 'human') {
+                        let d1x = 0; let d1z = 0;
+                        if (keys.numpadUp) d1z -= 1;
+                        if (keys.numpadDown) d1z += 1;
+                        if (keys.numpadLeft) d1x -= 1;
+                        if (keys.numpadRight) d1x += 1;
+                        if (d1x !== 0 || d1z !== 0) {
+                            const len = Math.sqrt(d1x * d1x + d1z * d1z);
+                            vx = (d1x / len) * speed;
+                            vz = (d1z / len) * speed;
+                        }
+                    } else {
+                        const targetX_D1 = -FIELD_WIDTH / 2;
+                        const targetZ_D1 = goalieA.mesh.position.z > 0 ? -3.5 : 3.5;
+                        const diffD1X = targetX_D1 - defender1.mesh.position.x;
+                        const diffD1Z = targetZ_D1 - defender1.mesh.position.z;
+                        const lenD1 = Math.sqrt(diffD1X * diffD1X + diffD1Z * diffD1Z);
+                        if (lenD1 > 0.1) {
+                            vx = (diffD1X / lenD1) * speed;
+                            vz = (diffD1Z / lenD1) * speed;
+                        }
+                    }
+                }
+
+                if (vx !== 0 || vz !== 0) {
+                    // Rotate the ball mesh dynamically
+                    ball.rotation.z -= vx / ballPhys.radius;
+                    ball.rotation.x += vz / ballPhys.radius;
+                }
+
+                // Sync visual position immediately to prevent visual lag/jitter
+                ball.position.x = ballPhys.x;
+                ball.position.z = ballPhys.z;
+            }
+
+            // 10. Corner Flags Wave Animation
+            const waveTime = performance.now() * 0.003;
+            flags.forEach(flag => {
+                const pos = flag.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const x = pos.getX(i);
+                    const y = pos.getY(i);
+                    const wave = Math.sin(x * 6 - waveTime * 5) * 0.08 * (x / 0.7) + Math.cos(y * 4 - waveTime * 3) * 0.02 * (x / 0.7);
+                    pos.setZ(i, wave);
+                }
+                pos.needsUpdate = true;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // --- CORRECTED WINDOW RESIZE ENGINE ---
+        window.addEventListener('resize', () => {
+            // Update aspect ratio for 3D depth geometry
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- FLAGS BACKGROUND GENERATION ---
+        function initFlagsBackground() {
+            const flagCodes = ['ad', 'ae', 'af', 'ag', 'ai', 'al', 'am', 'ao', 'aq', 'ar', 'as', 'at', 'au', 'aw', 'ax', 'az', 'ba', 'bb', 'bd', 'be', 'bf', 'bg', 'bh', 'bi', 'bj', 'bl', 'bm', 'bn', 'bo', 'bq', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'ca', 'cc', 'cd', 'cf', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn', 'co', 'cr', 'cu', 'cv', 'cw', 'cx', 'cy', 'cz', 'de', 'dj', 'dk', 'dm', 'do', 'dz', 'ec', 'ee', 'eg', 'eh', 'er', 'es', 'et', 'fi', 'fj', 'fk', 'fm', 'fo', 'fr', 'ga', 'gb-eng', 'gb-nir', 'gb-sct', 'gb-wls', 'gb', 'gd', 'ge', 'gf', 'gg', 'gh', 'gi', 'gl', 'gm', 'gn', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'gw', 'gy', 'hk', 'hm', 'hn', 'hr', 'ht', 'hu', 'id', 'ie', 'il', 'im', 'in', 'io', 'iq', 'ir', 'is', 'it', 'je', 'jm', 'jo', 'jp', 'ke', 'kg', 'kh', 'ki', 'km', 'kn', 'kp', 'kr', 'kw', 'ky', 'kz', 'la', 'lb', 'lc', 'li', 'lk', 'lr', 'ls', 'lt', 'lu', 'lv', 'ly', 'ma', 'mc', 'md', 'me', 'mf', 'mg', 'mh', 'mk', 'ml', 'mm', 'mn', 'mo', 'mp', 'mq', 'mr', 'ms', 'mt', 'mu', 'mv', 'mw', 'mx', 'my', 'mz', 'na', 'nc', 'ne', 'nf', 'ng', 'ni', 'nl', 'no', 'np', 'nr', 'nu', 'nz', 'om', 'pa', 'pe', 'pf', 'pg', 'ph', 'pk', 'pl', 'pm', 'pn', 'pr', 'ps', 'pt', 'pw', 'py', 'qa', 're', 'ro', 'rs', 'ru', 'rw', 'sa', 'sb', 'sc', 'sd', 'se', 'sg', 'sh', 'si', 'sj', 'sk', 'sl', 'sm', 'sn', 'so', 'sr', 'ss', 'st', 'sv', 'sx', 'sy', 'sz', 'tc', 'td', 'tf', 'tg', 'th', 'tj', 'tk', 'tl', 'tm', 'tn', 'to', 'tr', 'tt', 'tv', 'tw', 'tz', 'ua', 'ug', 'um', 'us', 'uy', 'uz', 'va', 'vc', 've', 'vg', 'vi', 'vn', 'vu', 'wf', 'ws', 'xk', 'ye', 'yt', 'za', 'zm', 'zw'];
+
+            function shuffle(array) {
+                const arr = [...array];
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            const container = document.getElementById('flags-bg-container');
+            if (!container) return;
+
+            for (let rowIdx = 0; rowIdx < 6; rowIdx++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = `flag-row ${rowIdx % 2 === 0 ? 'row-right' : 'row-left'}`;
+
+                const rowFlags = shuffle(flagCodes);
+                const groupSize = 15;
+                const selectedFlags = rowFlags.slice(0, groupSize);
+                const doubleFlags = [...selectedFlags, ...selectedFlags];
+
+                doubleFlags.forEach(code => {
+                    const img = document.createElement('img');
+                    img.src = `flags/${code}.png`;
+                    img.alt = code.toUpperCase();
+                    img.onerror = () => img.style.display = 'none';
+                    rowDiv.appendChild(img);
+                });
+
+                container.appendChild(rowDiv);
+            }
+        }
+
+        // Initialize flags background and start animation loop
+        initFlagsBackground();
+        animate();
+    </script>
+</body>
+
+</html>
