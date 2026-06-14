@@ -1,4 +1,4 @@
-# Alianza Bots Arcade: 3D Mini Soccer
+# BUCC Mini Soccer
 
 A responsive, high-performance 3D football arcade game built for local PvP (1v1) multiplayer and single-player VS AI play. The project is fully self-contained, optimized for showcase booths, and runs locally without server requirements.
 
